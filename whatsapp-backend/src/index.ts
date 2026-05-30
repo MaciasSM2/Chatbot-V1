@@ -38,6 +38,7 @@ import { InMemoryGreetingRepository } from "./providers/database/InMemoryGreetin
 import { PostgresMessageRepository } from "./providers/database/PostgresMessageRepository";
 import { Message } from "./core/entities/Message";
 import { ChatSession } from "./core/entities/ChatSession";
+import { Client } from "./core/entities/Client";
 import register from "./infrastructure/metrics/Metrics";
 
 import { MetaWhatsAppGateway } from "./infrastructure/gateways/MetaWhatsAppGateway";
@@ -262,7 +263,7 @@ async function startup() {
     moduleService
   );
 
-  const orchestrator = new ChatbotOrchestrator(welcomeOrchestrator, clientRepository);
+  const orchestrator = new ChatbotOrchestrator(welcomeOrchestrator, clientRepository, sessionRepository);
   const continuityService = new ContinuityService(messageQueue);
   const enqueueUseCase = new EnqueueMessageUseCase(messageQueue, redisConnection, continuityService);
 
@@ -737,7 +738,25 @@ async function startup() {
         });
       }
 
-      if ((userId || 'TEST_BOT_DEBUG') === 'TEST_BOT_DEBUG') {
+      // Auto-Seeding: Si es cliente existente y se envían detalles, registrar en BD
+      if (!isNewClient && req.body?.fullName) {
+        const phoneKey = userId || 'TEST_BOT_DEBUG';
+        const existing = await clientRepository.findByPhoneNumber(phoneKey);
+        const clientId = existing ? existing.id : (req.body.id || `seeder_${Date.now()}`);
+        const client = new Client(
+          clientId,
+          phoneKey,
+          req.body.fullName,
+          true,
+          {
+            phone: phoneKey,
+            fullName: req.body.fullName,
+            identification: req.body.identification || 'N/A',
+            gender: req.body.gender || 'No especificado'
+          }
+        );
+        await clientRepository.save(client);
+      } else if ((userId || 'TEST_BOT_DEBUG') === 'TEST_BOT_DEBUG') {
         if (!isNewClient) {
           await injectMockUser(clientRepository, dbPool);
         } else {
@@ -856,14 +875,14 @@ async function startup() {
       }
 
       // Actualizar explícitamente el estado de la sesión de FSM en Redis o Base de Datos
-      let nextStep = (isNewClient && !isNonWorkable) ? "AWAITING_NAME" : (isNonWorkable ? "WELCOME" : "AWAITING_MENU_OPTION");
+      let nextStep = (isNewClient && !isNonWorkable) ? "CHECKING_REGISTRATION" : (isNonWorkable ? "WELCOME" : "AWAITING_MENU_OPTION");
       
       const reqInitialState = (req.body?.initialState || req.query?.initialState) as string | undefined;
       if (reqInitialState) {
         if (reqInitialState === 'MAIN_MENU') {
           nextStep = 'AWAITING_MENU_OPTION';
         } else if (reqInitialState === 'AWAITING_DATA') {
-          nextStep = 'AWAITING_NAME';
+          nextStep = 'CHECKING_REGISTRATION';
         } else if (reqInitialState === 'GREETING') {
           nextStep = 'WELCOME';
         }

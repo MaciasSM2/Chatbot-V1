@@ -5,9 +5,10 @@
  */
 
 import React from 'react';
-import { Clock, ShieldCheck, Hand, Bot, AlertCircle, Download } from 'lucide-react';
+import { Clock, ShieldCheck, Hand, Bot, AlertCircle, Download, Sun, Moon } from 'lucide-react';
 import { getUrgencyLevel, URGENCY_STRATEGY, formatMsToMinutes } from '../../utils/timerHelpers';
 import { exportTestLogs } from '../../../application/services/exportTestLogs';
+import { useTheme } from '../../../application/providers/ThemeContext';
 
 export const ChatHeader = ({
   clientName,
@@ -21,6 +22,7 @@ export const ChatHeader = ({
   activeScenario = {},
   children
 }) => {
+  const { isDark, setIsDark } = useTheme();
   
   // --- Estado Derivado de la UI (No consume render loops adicionales de Zustand) ---
   const urgencyLevel = continuityTimer ? getUrgencyLevel(continuityTimer.time) : 'STABLE';
@@ -32,10 +34,10 @@ export const ChatHeader = ({
   const efficiency = botMsgs === 0 ? '0.0' : (userMsgs / botMsgs).toFixed(1);
 
   return (
-    <div className={`text-slate-100 px-4 py-3 z-10 flex items-center justify-between border-b select-none transition-all duration-500 ease-in-out ${
+    <div className={`px-4 py-3 z-10 flex items-center justify-between border-b border-border-subtle select-none transition-all duration-500 ease-in-out ${
       isBotPaused 
         ? 'bg-amber-950/40 border-amber-500/30 shadow-[0_4px_20px_rgba(245,158,11,0.08)]' 
-        : 'bg-[#202c33]/95 backdrop-blur-md border-white/5'
+        : 'bg-surface-header/95 backdrop-blur-md'
     }`}>
       
       {/* Datos del Cliente */}
@@ -43,11 +45,11 @@ export const ChatHeader = ({
         <div className="relative w-10 h-10 bg-slate-600 rounded-full flex items-center justify-center font-bold text-white uppercase shrink-0">
           {clientName.substring(0, 2)}
           {isOnline && (
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#202c33] rounded-full animate-pulse" />
+            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-surface-header rounded-full animate-pulse" />
           )}
         </div>
         <div className="min-w-0">
-          <h2 className="text-sm font-bold text-slate-100 flex items-center gap-1.5 leading-tight truncate max-w-[150px] md:max-w-[200px]">
+          <h2 className="text-sm font-bold text-content-primary flex items-center gap-1.5 leading-tight truncate max-w-[150px] md:max-w-[200px]">
             {clientName}
             <span title="Cliente validado en PostgreSQL" className="text-emerald-500">
               <ShieldCheck size={14} />
@@ -56,12 +58,12 @@ export const ChatHeader = ({
           {isTyping ? (
             <p className="text-emerald-400 text-[11px] font-semibold animate-pulse leading-none mt-0.5">escribiendo...</p>
           ) : (
-            <div className="flex items-center flex-wrap gap-2 text-[10px] text-slate-400 font-mono mt-0.5 leading-none">
+            <div className="flex items-center flex-wrap gap-2 text-[10px] text-content-secondary font-mono mt-0.5 leading-none">
               <span>{phoneNumber}</span>
-              <span className="text-slate-600">|</span>
+              <span className="text-content-secondary/60">|</span>
               <span className="text-sky-400">U: {userMsgs}</span>
               <span className="text-emerald-400">B: {botMsgs}</span>
-              <span className="bg-white/5 px-1.5 py-0.5 rounded text-[9px] text-slate-300 font-bold uppercase tracking-tight">
+              <span className="bg-border-subtle px-1.5 py-0.5 rounded text-[9px] text-content-secondary font-bold uppercase tracking-tight">
                  Ratio: {efficiency}
               </span>
             </div>
@@ -116,10 +118,19 @@ export const ChatHeader = ({
           <span className="hidden md:inline">{isBotPaused ? 'REACTIVAR BOT' : 'PAUSAR BOT'}</span>
         </button>
 
+        {/* BOTÓN DE TEMA */}
+        <button
+          onClick={() => setIsDark(!isDark)}
+          className="p-2 rounded-xl hover:bg-white/10 transition-all text-content-secondary cursor-pointer active:scale-90 flex items-center justify-center"
+          title={isDark ? 'Activar modo claro' : 'Activar modo oscuro'}
+        >
+          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+
         {/* BOTÓN DE EXPORTACIÓN */}
         <button 
            onClick={() => exportTestLogs(messages, activeScenario)}
-           className="p-2 bg-[#2a3942] hover:bg-[#3b4a54] text-slate-300 rounded-xl transition-all cursor-pointer active:scale-90 border border-white/5 shadow-md flex items-center justify-center"
+           className="p-2 bg-surface-raised hover:bg-surface-header text-content-secondary rounded-xl transition-all cursor-pointer active:scale-90 border border-border-subtle shadow-md flex items-center justify-center"
            title="Exportar Logs de Test (JSON)"
         >
            <Download size={16} />

@@ -19,12 +19,12 @@ export const TestSummaryStep = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         {/* Card de Resumen Dinámico */}
         {steps.map((step) => (
-          <div key={step.id} className="bg-[#111b21] p-4 rounded-2xl border border-white/5 shadow-inner">
+          <div key={step.id} className="bg-surface-panel p-4 rounded-2xl border border-border-subtle shadow-inner">
             <div className="flex items-center gap-3 mb-2">
               <div className="text-emerald-500 opacity-70 scale-75 shrink-0">{step.icon}</div>
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{step.title}</span>
+              <span className="text-[10px] font-black text-content-secondary uppercase tracking-widest">{step.title}</span>
             </div>
-            <p className="text-xs font-bold text-slate-200">
+            <p className="text-xs font-bold text-content-primary">
               {step.options.find(o => o.value === config[step.key])?.label}
             </p>
           </div>
@@ -35,7 +35,7 @@ export const TestSummaryStep = ({
         {/* Botón Principal de Inicio */}
         <button 
           onClick={() => onStartTest(config)}
-          className="w-full bg-[#00a884] hover:bg-[#008f72] text-white py-5 rounded-2xl font-black text-xs flex items-center justify-center gap-3 shadow-xl shadow-emerald-900/20 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
+          className="w-full bg-brand-green hover:brightness-110 text-white py-5 rounded-2xl font-black text-xs flex items-center justify-center gap-3 shadow-xl shadow-emerald-900/20 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
         >
           INICIAR SIMULACIÓN <Play size={16} fill="currentColor" />
         </button>
@@ -44,7 +44,7 @@ export const TestSummaryStep = ({
           {/* Botón de Editar */}
           <button 
             onClick={() => setCurrentStep(0)} // Regresa al inicio manteniendo el estado
-            className="flex-1 bg-[#2a3942] hover:bg-[#3b4a54] text-slate-200 py-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+            className="flex-1 bg-surface-raised hover:bg-surface-header text-content-primary py-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
             <Edit3 size={14} /> EDITAR
           </button>

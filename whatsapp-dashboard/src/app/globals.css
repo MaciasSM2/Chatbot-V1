@@ -1,26 +1,70 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:where(.dark, .dark *));
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg-main: #f0f2f5;
+    --bg-panel: #ffffff;
+    --bg-header: #f0f2f5;
+    --bg-input: #ffffff;
+    --bg-raised: #f7f8fa;
+    --bg-welcome: #efeae2;
+
+    --text-primary: #111b21;
+    --text-secondary: #667781;
+    --text-inverse: #ffffff;
+
+    --bubble-bot: #ffffff;
+    --bubble-user: #dcf8c6;
+    --bubble-border: rgba(0, 0, 0, 0.05);
+
+    --brand-green: #00a884;
+    --brand-green-hover: #06cf9c;
+    --accent-amber: #ffbc2e;
+    --status-error: #f15f5f;
+  }
+
+  .dark {
+    --bg-main: #0b141a;
+    --bg-panel: #111b21;
+    --bg-header: #202c33;
+    --bg-input: #2a3942;
+    --bg-raised: #182229;
+    --bg-welcome: #0b141a;
+
+    --text-primary: #e9edef;
+    --text-secondary: #8696a0;
+    --text-inverse: #111b21;
+
+    --bubble-bot: #202c33;
+    --bubble-user: #005c4b;
+    --bubble-border: rgba(255, 255, 255, 0.05);
+
+    --brand-green: #00a884;
+    --brand-green-hover: #06cf9c;
+    --accent-amber: #ffbc2e;
+    --status-error: #f15f5f;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@theme inline {
+  --color-surface-main: var(--bg-main);
+  --color-surface-panel: var(--bg-panel);
+  --color-surface-header: var(--bg-header);
+  --color-surface-input: var(--bg-input);
+  --color-surface-raised: var(--bg-raised);
+  --color-content-primary: var(--text-primary);
+  --color-content-secondary: var(--text-secondary);
+  --color-content-inverse: var(--text-inverse);
+  --color-bubble-bot: var(--bubble-bot);
+  --color-bubble-user: var(--bubble-user);
+  --color-bubble-border: var(--bubble-border);
+  --color-brand-green: var(--brand-green);
+  --color-brand-green-hover: var(--brand-green-hover);
+  --color-accent-amber: var(--accent-amber);
+  --color-status-error: var(--status-error);
+  --color-bg-welcome: var(--bg-welcome);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }

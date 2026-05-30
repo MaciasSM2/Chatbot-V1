@@ -84,13 +84,13 @@ export const TestConfigWizard = ({ onStartTest, onClose }) => {
 
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#0b141a]/98 backdrop-blur-xl p-6">
-      <div className="w-full max-w-xl bg-[#202c33] rounded-[32px] shadow-2xl border border-white/5 overflow-hidden animate-in fade-in zoom-in duration-300 relative">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-surface-main/98 backdrop-blur-xl p-6">
+      <div className="w-full max-w-xl bg-surface-panel rounded-[32px] shadow-2xl border border-border-subtle overflow-hidden animate-in fade-in zoom-in duration-300 relative">
         
         {onClose && (
           <button 
             onClick={onClose}
-            className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-200 hover:bg-white/5 rounded-full transition-all cursor-pointer z-10 active:scale-95 border border-transparent hover:border-white/10"
+            className="absolute top-6 right-6 p-2 text-content-secondary hover:text-content-primary hover:bg-white/5 rounded-full transition-all cursor-pointer z-10 active:scale-95 border border-transparent hover:border-border-subtle"
             title="Cerrar configuración"
           >
             <X size={18} />
@@ -98,7 +98,7 @@ export const TestConfigWizard = ({ onStartTest, onClose }) => {
         )}
 
         {/* Barra de Progreso Superior */}
-        <div className="flex h-1.5 bg-[#2a3942]">
+        <div className="flex h-1.5 bg-surface-raised">
           {steps.map((_, idx) => (
             <div 
               key={idx}
@@ -117,11 +117,11 @@ export const TestConfigWizard = ({ onStartTest, onClose }) => {
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">Paso {currentStep + 1} de {steps.length}</p>
-                  <h2 className="text-xl font-bold text-white">{currentStepData.title}</h2>
+                  <h2 className="text-xl font-bold text-content-primary">{currentStepData.title}</h2>
                 </div>
               </div>
 
-              <p className="text-slate-400 text-xs mb-8 leading-relaxed">
+              <p className="text-content-secondary text-xs mb-8 leading-relaxed">
                 {currentStepData.description}
               </p>
 
@@ -134,18 +134,17 @@ export const TestConfigWizard = ({ onStartTest, onClose }) => {
                     className={`w-full text-left p-4 rounded-2xl border-2 transition-all cursor-pointer group ${
                       config[currentStepData.key] === opt.value
                         ? 'border-emerald-500 bg-emerald-500/5'
-                        : 'border-white/5 bg-[#111b21] hover:border-white/20'
-                    }`}
-                  >
+                        : 'border-border-subtle bg-surface-panel hover:border-content-secondary/30'
+                    }`}>
                     <div className="flex justify-between items-center mb-1">
-                      <span className={`font-bold text-xs ${config[currentStepData.key] === opt.value ? 'text-emerald-400' : 'text-slate-200'}`}>
+                      <span className={`font-bold text-xs ${config[currentStepData.key] === opt.value ? 'text-emerald-400' : 'text-content-primary'}`}>
                         {opt.label}
                       </span>
                       {config[currentStepData.key] === opt.value && (
                         <CheckCircle2 size={16} className="text-emerald-500" />
                       )}
                     </div>
-                    <p className="text-[10px] text-slate-500 group-hover:text-slate-400 transition-colors">
+                    <p className="text-[10px] text-content-secondary/70 group-hover:text-content-secondary transition-colors">
                       {opt.detail}
                     </p>
                   </button>
@@ -157,7 +156,7 @@ export const TestConfigWizard = ({ onStartTest, onClose }) => {
                 <button 
                   onClick={handleBack}
                   disabled={currentStep === 0}
-                  className={`flex items-center gap-2 text-xs font-bold transition-opacity cursor-pointer ${currentStep === 0 ? 'opacity-0 pointer-events-none' : 'text-slate-400 hover:text-white'}`}
+                  className={`flex items-center gap-2 text-xs font-bold transition-opacity cursor-pointer ${currentStep === 0 ? 'opacity-0 pointer-events-none' : 'text-content-secondary hover:text-content-primary'}`}
                 >
                   <ChevronLeft size={16} /> Atrás
                 </button>
@@ -178,11 +177,11 @@ export const TestConfigWizard = ({ onStartTest, onClose }) => {
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">Paso 5 de 5 (Confirmación)</p>
-                  <h2 className="text-xl font-bold text-white">Resumen de Escenario</h2>
+                  <h2 className="text-xl font-bold text-content-primary">Resumen de Escenario</h2>
                 </div>
               </div>
 
-              <p className="text-slate-400 text-xs mb-8 leading-relaxed">
+              <p className="text-content-secondary text-xs mb-8 leading-relaxed">
                 Confirma la configuración elegida para la simulación antes de activar el motor FSM de test.
               </p>
 

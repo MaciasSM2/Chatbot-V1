@@ -130,7 +130,7 @@ export const SidebarSearch = ({ onLocalSearch, action }) => {
   };
 
   return (
-    <div ref={containerRef} className="p-0 border-b border-slate-800/50 relative z-30 flex flex-col">
+    <div ref={containerRef} className="p-0 border-b border-border-subtle relative z-30 flex flex-col">
       <div className="p-4 flex gap-2 items-center">
         <div className="relative flex-1 group">
           <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-500">
@@ -146,7 +146,7 @@ export const SidebarSearch = ({ onLocalSearch, action }) => {
             placeholder="Buscar un mensaje o contacto..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 text-sm pl-10 pr-9 py-2.5 rounded-xl placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all text-slate-100"
+            className="w-full bg-surface-main border border-surface-header text-sm pl-10 pr-9 py-2.5 rounded-xl placeholder-content-secondary focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all text-content-primary"
           />
 
           {query && (
@@ -187,22 +187,22 @@ export const SidebarSearch = ({ onLocalSearch, action }) => {
 
       {/* Dropdown de Resultados Globales */}
       {showDropdown && query.trim() && (
-        <div className="absolute top-full left-4 right-4 mt-1.5 bg-[#182229]/95 backdrop-blur-md border border-white/5 rounded-2xl shadow-2xl max-h-[350px] overflow-y-auto z-40 custom-scrollbar select-none animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="p-3 text-[10px] font-extrabold uppercase tracking-widest text-emerald-400 border-b border-white/5 bg-emerald-500/5">
+        <div className="absolute top-full left-4 right-4 mt-1.5 bg-surface-raised/95 backdrop-blur-md border border-border-subtle rounded-2xl shadow-2xl max-h-[350px] overflow-y-auto z-40 custom-scrollbar select-none animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="p-3 text-[10px] font-extrabold uppercase tracking-widest text-emerald-400 border-b border-border-subtle bg-emerald-500/5">
             🔍 Resultados Globales en Historial
           </div>
 
           {isSearching ? (
-            <div className="p-8 text-center text-xs text-slate-500 flex flex-col items-center justify-center gap-2">
+            <div className="p-8 text-center text-xs text-content-secondary flex flex-col items-center justify-center gap-2">
               <Loader2 size={24} className="animate-spin text-emerald-400" />
               <span>Buscando en mensajes...</span>
             </div>
           ) : globalResults.length === 0 ? (
-            <div className="p-8 text-center text-xs text-slate-500 italic">
+            <div className="p-8 text-center text-xs text-content-secondary italic">
               No se encontraron mensajes que coincidan con tu búsqueda
             </div>
           ) : (
-            <div className="divide-y divide-white/5 pb-16">
+            <div className="divide-y divide-border-subtle pb-16">
               {globalResults.map((result) => (
                 <div
                   key={result.id}
@@ -210,16 +210,16 @@ export const SidebarSearch = ({ onLocalSearch, action }) => {
                   className="p-3 hover:bg-white/5 transition-colors cursor-pointer flex flex-col gap-1.5 active:bg-white/10"
                 >
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-200 uppercase tracking-wide truncate max-w-[120px]">
+                    <span className="text-xs font-bold text-content-primary uppercase tracking-wide truncate max-w-[120px]">
                       👤 {result.clientName || result.userId}
                     </span>
-                    <span className="text-[9px] text-slate-500 flex items-center gap-1 shrink-0">
+                    <span className="text-[9px] text-content-secondary/70 flex items-center gap-1 shrink-0">
                       <Calendar size={10} />
                       {formatTime(result.timestamp)}
                     </span>
                   </div>
                   
-                  <div className="text-xs text-slate-400 flex gap-2 items-start leading-snug">
+                  <div className="text-xs text-content-secondary flex gap-2 items-start leading-snug">
                     <MessageSquare size={12} className="text-emerald-500/80 shrink-0 mt-0.5" />
                     <p className="break-all line-clamp-2 select-none">
                       {highlightText(result.text, query)}
@@ -227,8 +227,8 @@ export const SidebarSearch = ({ onLocalSearch, action }) => {
                   </div>
                 </div>
               ))}
-              <div className="sticky bottom-0 bg-[#182229] border-t border-white/5 p-3 flex justify-between items-center">
-                <span className="text-[10px] text-slate-500 font-medium">
+              <div className="sticky bottom-0 bg-surface-raised border-t border-border-subtle p-3 flex justify-between items-center">
+                <span className="text-[10px] text-content-secondary/70 font-medium">
                   Resultados: {globalResults.length}
                 </span>
                 <SearchResultsActions 

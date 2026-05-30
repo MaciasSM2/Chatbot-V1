@@ -6,13 +6,14 @@ import { ChatInput } from './ChatInput';
 import { QuickRegistrationForm } from './QuickRegistrationForm';
 import { TestConfigWizard } from './TestConfigWizard';
 import { ChatHeader } from './ChatHeader';
-import { Search, MoreVertical, Phone, Video, ArrowLeft, Shield, Moon, AlertTriangle, Trash2, Sliders, X, Maximize2, Minimize2, Cpu, ChevronUp, ChevronDown } from 'lucide-react';
+import { Search, MoreVertical, Phone, Video, ArrowLeft, Shield, Moon, AlertTriangle, Trash2, Sliders, X, Maximize2, Minimize2, Cpu, ChevronUp, ChevronDown, Pin, PinOff } from 'lucide-react';
 import { usePushNotifications } from '../../../application/hooks/usePushNotifications';
 import { useSocketEvents } from '../../../application/hooks/useSocketEvents';
 import { generateInitialFrame } from '../../../application/services/SimulationService';
 import { initializeSimulation } from '../../../application/services/SimulationInitializer';
 import { LoadingOverlay } from './LoadingOverlay';
 import { LiveDebugSidebar } from './LiveDebugSidebar';
+import { ClientPersistenceService } from '../../../application/services/ClientPersistenceService';
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL_BASE || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const BASE_URL = rawApiUrl.endsWith('/api') ? rawApiUrl.slice(0, -4) : rawApiUrl;
@@ -82,8 +83,26 @@ export const ChatWindow = ({ chatId }) => {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showDebugSidebar, setShowDebugSidebar] = useState(false);
+  const [pinnedTop, setPinnedTop] = useState(false);
+  const [pinnedBottom, setPinnedBottom] = useState(false);
   const [showDiag, setShowDiag] = useState(false);
   const [showControls, setShowControls] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const pinDiag = JSON.parse(localStorage.getItem('pin_diag') || 'false');
+      const pinCtrl = JSON.parse(localStorage.getItem('pin_ctrl') || 'false');
+      setPinnedTop(pinDiag);
+      setPinnedBottom(pinCtrl);
+      if (isFullScreen) {
+        setShowDiag(false);
+        setShowControls(false);
+      } else {
+        setShowDiag(pinDiag);
+        setShowControls(pinCtrl);
+      }
+    }
+  }, [isFullScreen]);
 
   const effectiveIsNonWorkable = activeScenario ? activeScenario.isNonWorkable : isNonWorkableContext;
   const effectiveDayType = activeScenario ? activeScenario.dayType : dayType;
@@ -191,7 +210,7 @@ export const ChatWindow = ({ chatId }) => {
 
   if (isLoading && messages.length === 0) {
     return (
-      <div className="flex-1 h-full w-full flex flex-col items-center justify-center bg-[#0b141a] text-slate-400 select-none">
+      <div className="flex-1 h-full w-full flex flex-col items-center justify-center bg-surface-main text-content-secondary select-none">
         <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
         <span className="text-sm font-semibold tracking-wide animate-pulse">Cargando historial...</span>
       </div>
@@ -199,7 +218,7 @@ export const ChatWindow = ({ chatId }) => {
   }
 
   return (
-    <div className="flex h-full w-full bg-[#0b141a] overflow-hidden relative transition-all duration-300 border-none rounded-none shadow-none">
+    <div className="flex h-full w-full bg-surface-main overflow-hidden relative transition-all duration-300 border-none rounded-none shadow-none">
       
       {/* 1. Área Central del Chat */}
       <div className="flex-1 flex flex-col h-full bg-transparent overflow-hidden relative border-none rounded-none shadow-none">
@@ -279,12 +298,12 @@ export const ChatWindow = ({ chatId }) => {
 
       {/* Acordeón Superior: Diagnóstico y Alertas */}
       {!isConfiguring && !isBooting && (
-        <div className="border-b border-white/5 select-none bg-[#202c33]/30">
-          <div 
-            onClick={() => setShowDiag(!showDiag)}
-            className="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:bg-[#202c33]/40 transition-colors"
-          >
-            <div className="flex items-center gap-3">
+        <div className="border-b border-border-subtle select-none bg-surface-header/30">
+          <div className="px-4 py-2 flex items-center justify-between bg-surface-header/20">
+            <div 
+              onClick={() => !pinnedTop && setShowDiag(!showDiag)}
+              className="flex-1 cursor-pointer flex items-center gap-3 py-1"
+            >
               <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full select-none tracking-wide transition-all ${
                 diagnostic.status === 'healthy' 
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
@@ -308,11 +327,33 @@ export const ChatWindow = ({ chatId }) => {
                 </div>
               )}
             </div>
-            {showDiag ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const newState = !pinnedTop;
+                  setPinnedTop(newState);
+                  localStorage.setItem('pin_diag', JSON.stringify(newState));
+                  if (newState) {
+                    setShowDiag(true);
+                  }
+                }}
+                className={`p-1 hover:bg-white/5 rounded transition-all cursor-pointer ${pinnedTop ? 'text-emerald-400 bg-emerald-500/10' : 'text-content-secondary hover:text-content-primary'}`}
+                title={pinnedTop ? "Desfijar Diagnóstico" : "Fijar Diagnóstico (Siempre Abierto)"}
+              >
+                {pinnedTop ? <Pin size={11} className="fill-current" /> : <PinOff size={11} />}
+              </button>
+              <ChevronDown 
+                onClick={() => !pinnedTop && setShowDiag(!showDiag)}
+                className={`transition-transform duration-300 text-content-secondary cursor-pointer ${showDiag ? 'rotate-180' : ''}`} 
+                size={14} 
+              />
+            </div>
           </div>
 
           {/* CONTENIDO COLAPSABLE SUPERIOR */}
-          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showDiag ? 'max-h-[300px] border-t border-white/5 bg-[#182229]/80 backdrop-blur-md' : 'max-h-0'}`}>
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showDiag ? 'max-h-[300px] border-t border-border-subtle bg-surface-raised/80 backdrop-blur-md' : 'max-h-0'}`}>
             <div className="p-4 flex flex-col gap-2.5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -407,25 +448,11 @@ export const ChatWindow = ({ chatId }) => {
         </div>
       )}
 
-      {/* Banner de Onboarding Sutil */}
-      {!isConfiguring && !isBooting && !isRegistered && (chatId === 'TEST_BOT_DEBUG' ? (activeScenario?.profile === 'NEW') : true) && (
-        <div className="px-4 py-2.5 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center justify-between backdrop-blur-md select-none animate-in slide-in-from-top-1 duration-200">
-          <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
-            <Shield size={14} className="animate-pulse" />
-            Cliente Nuevo Detectado
-          </div>
-          <button 
-            onClick={() => setShowOnboarding(prev => !prev)}
-            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-extrabold uppercase tracking-wider rounded-lg transition-all duration-200 cursor-pointer active:scale-95 shadow border border-emerald-500/20"
-          >
-            {showOnboarding ? '🙈 Ocultar Registro' : '📝 Ver Encuesta de Registro'}
-          </button>
-        </div>
-      )}
+
 
       {isConfiguring ? (
         <div 
-          className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar bg-[#0b141a] flex flex-col items-center justify-center relative" 
+          className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar bg-surface-main flex flex-col items-center justify-center relative" 
           style={{ 
             backgroundImage: `linear-gradient(rgba(11, 20, 26, 0.95), rgba(11, 20, 26, 0.95)), url('https://i.pinimg.com/originals/85/70/f6/8570f6339d318933fa30979dcba3ad68.png')`, 
             backgroundRepeat: 'repeat', 
@@ -438,6 +465,16 @@ export const ChatWindow = ({ chatId }) => {
               setIsConfiguring(false);
               
               try {
+                // Al iniciar simulación, si es nuevo, lo guardamos en la persistencia local de clientes (source: 'wizard')
+                if (wizardConfig.userType === 'new') {
+                  ClientPersistenceService.save({
+                    phone: chatId,
+                    fullName: 'Andrés Felipe Valencia',
+                    identification: '1037654321',
+                    gender: 'Caballero'
+                  }, 'wizard');
+                }
+
                 // 1. Generar el primer "Frame" local optimista y prepararlo
                 const { firstFrame } = await initializeSimulation(wizardConfig);
                 console.log("ℹ️ MODO SIMULACIÓN: Primer Frame e inyección listos:", firstFrame);
@@ -470,7 +507,7 @@ export const ChatWindow = ({ chatId }) => {
         <>
           {/* Área de Mensajes con Fondo WhatsApp Clásico */}
           <div 
-            className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar bg-[#0b141a] flex flex-col gap-2 relative" 
+            className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar bg-surface-main flex flex-col gap-2 relative" 
             style={{ 
               backgroundImage: `linear-gradient(rgba(11, 20, 26, 0.95), rgba(11, 20, 26, 0.95)), url('https://i.pinimg.com/originals/85/70/f6/8570f6339d318933fa30979dcba3ad68.png')`, 
               backgroundRepeat: 'repeat', 
@@ -481,6 +518,21 @@ export const ChatWindow = ({ chatId }) => {
               <div className="sticky top-0 z-20 w-full py-2 px-4 mb-2 bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-md rounded-xl text-center flex items-center justify-center gap-2 text-xs text-emerald-400 animate-pulse select-none shadow-lg shadow-emerald-950/20">
                 <span className="w-3.5 h-3.5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin shrink-0" />
                 Cargando historial...
+              </div>
+            )}
+
+            {/* Banner de Simulación Validada (Detector de Huellas) */}
+            {currentChat?.isRegistered && currentChat.metadata?.fullName && (
+              <div className="w-full py-2.5 px-4 mb-3 bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-md rounded-2xl flex items-center justify-between text-xs text-emerald-400 select-none shadow-lg shadow-emerald-950/20 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex items-center gap-2">
+                  <Shield size={14} className="text-emerald-500 animate-pulse shrink-0 animate-bounce" />
+                  <p className="font-extrabold uppercase tracking-wide">
+                    Simulación Validada: <span className="text-slate-100 font-bold">{currentChat.metadata.fullName}</span>
+                  </p>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-lg shrink-0">
+                  CÉDULA: {currentChat.metadata.identification || 'N/A'}
+                </span>
               </div>
             )}
 
@@ -496,14 +548,42 @@ export const ChatWindow = ({ chatId }) => {
               />
             )}
 
-            {messages.map((msg, idx) => (
+             {messages.map((msg, idx) => (
               <MessageBubble key={msg.id || idx} message={msg} />
             ))}
+
+            
+             {/* Feedback Visual de Validación */}
+             {currentChat?.currentStep === 'AWAITING_ID_VERIFICATION' && (
+               <div className="flex items-center gap-2 p-3 bg-sky-500/10 border border-sky-500/20 rounded-xl my-2 animate-pulse">
+                 <Search size={16} className="text-sky-400" />
+                 <span className="text-[10px] font-bold text-sky-400 uppercase tracking-widest">
+                   Consultando DB Local: Buscando coincidencia de ID...
+                 </span>
+               </div>
+             )}
+
+             {/* Indicador de Campos Pendientes (Feedback Visual) */}
+            {currentChat?.currentStep && 
+             (currentChat.currentStep.startsWith('ASKING_') || 
+              (currentChat.currentStep.startsWith('AWAITING_') && currentChat.currentStep !== 'AWAITING_MENU_OPTION')) && (
+              <div className="flex justify-center my-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full flex items-center gap-2 shadow-lg shadow-emerald-950/20 select-none">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">
+                    Recopilando: {currentChat.currentStep.replace('ASKING_', '').replace('AWAITING_', '').replace('REGISTRATION_DATA', 'NAME')}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Indicador de Escritura de WhatsApp con Animación de Rebote */}
             {isLoading && (
               <div className="flex w-full justify-start mb-2 px-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="relative max-w-[75%] rounded-2xl rounded-tl-none bg-[#202c33] text-slate-100 border border-slate-800 px-4 py-2.5 shadow-md flex items-center gap-2">
+                <div className="relative max-w-[75%] rounded-2xl rounded-tl-none bg-bubble-bot text-content-primary border-border-subtle px-4 py-2.5 shadow-md flex items-center gap-2">
                   <div className="flex items-center gap-1.5">
                     <div className="flex gap-1 h-3 items-center">
                       <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -519,24 +599,24 @@ export const ChatWindow = ({ chatId }) => {
           </div>
 
           {/* Acordeón Inferior: Controles de FSM y Test */}
-          <div className="shrink-0 flex flex-col bg-[#111b21] border-t border-white/5 relative z-10">
+          <div className="shrink-0 flex flex-col bg-surface-panel border-t border-border-subtle relative z-10">
             {/* CONTENIDO COLAPSABLE INFERIOR */}
-            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showControls ? 'max-h-[400px] border-b border-white/5' : 'max-h-0'}`}>
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showControls ? 'max-h-[400px] border-b border-border-subtle' : 'max-h-0'}`}>
               
               {/* Selector de Perfil y Género de Cliente */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 bg-[#182229]/95 px-4 backdrop-blur-md relative border-b border-white/5">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 bg-surface-raised/95 px-4 backdrop-blur-md relative border-b border-border-subtle">
                 <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Perfil:</span>
-                  <div className="flex bg-slate-950/80 rounded-xl p-1 border border-white/5 shadow-inner">
+                  <span className="text-[10px] font-extrabold text-content-secondary uppercase tracking-wider">Perfil:</span>
+                  <div className="flex bg-surface-main/80 rounded-xl p-1 border border-bubble-border shadow-inner">
                     <button 
                       onClick={() => setIsNewClient(true)}
-                      className={`px-4 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-95 cursor-pointer ${isNewClient ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-500 hover:text-slate-400'}`}
+                      className={`px-4 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-95 cursor-pointer ${isNewClient ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-content-secondary hover:text-content-primary'}`}
                     >
                       👶 NUEVO
                     </button>
                     <button 
                       onClick={() => setIsNewClient(false)}
-                      className={`px-4 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-95 cursor-pointer ${!isNewClient ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' : 'text-slate-500 hover:text-slate-400'}`}
+                      className={`px-4 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-95 cursor-pointer ${!isNewClient ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' : 'text-content-secondary hover:text-content-primary'}`}
                     >
                       ✅ EXISTENTE
                     </button>
@@ -544,17 +624,17 @@ export const ChatWindow = ({ chatId }) => {
                 </div>
 
                 <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Género:</span>
-                  <div className="flex bg-slate-950/80 rounded-xl p-1 border border-white/5 shadow-inner">
+                  <span className="text-[10px] font-extrabold text-content-secondary uppercase tracking-wider">Género:</span>
+                  <div className="flex bg-surface-main/80 rounded-xl p-1 border border-bubble-border shadow-inner">
                     <button 
                       onClick={() => setGender('M')}
-                      className={`px-4 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-95 cursor-pointer ${gender === 'M' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/20' : 'text-slate-500 hover:text-slate-400'}`}
+                      className={`px-4 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-95 cursor-pointer ${gender === 'M' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/20' : 'text-content-secondary hover:text-content-primary'}`}
                     >
                       👨 Caballero
                     </button>
                     <button 
                       onClick={() => setGender('F')}
-                      className={`px-4 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-95 cursor-pointer ${gender === 'F' ? 'bg-pink-600 text-white shadow-lg shadow-pink-500/20' : 'text-slate-500 hover:text-slate-400'}`}
+                      className={`px-4 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-95 cursor-pointer ${gender === 'F' ? 'bg-pink-600 text-white shadow-lg shadow-pink-500/20' : 'text-content-secondary hover:text-content-primary'}`}
                     >
                       👩 Dama
                     </button>
@@ -563,8 +643,8 @@ export const ChatWindow = ({ chatId }) => {
               </div>
 
               {/* Barra de Simulación FSM Rápida */}
-              <div className="bg-[#182229]/95 px-4 py-2.5 flex items-center gap-2.5 overflow-x-auto select-none backdrop-blur-md">
-                <span className="text-[10px] font-extrabold text-slate-400 tracking-wider shrink-0">SIMULAR FSM:</span>
+              <div className="bg-surface-raised/95 px-4 py-2.5 flex items-center gap-2.5 overflow-x-auto select-none backdrop-blur-md">
+                <span className="text-[10px] font-extrabold text-content-secondary tracking-wider shrink-0">SIMULAR FSM:</span>
                 <button
                   onClick={() => handleSimulateCategory('INITIATION')}
                   disabled={isCheckingDiagnostic || isLoading}
@@ -581,8 +661,8 @@ export const ChatWindow = ({ chatId }) => {
                 </button>
 
                 {/* Botones de Continuidad con Parámetros */}
-                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/5">
-                  <span className="text-[9px] font-extrabold text-slate-400 px-2 uppercase tracking-wider whitespace-nowrap">⏳ CONTINUIDAD:</span>
+                <div className="flex items-center gap-1 bg-surface-main/50 p-1 rounded-xl border border-bubble-border">
+                  <span className="text-[9px] font-extrabold text-content-secondary px-2 uppercase tracking-wider whitespace-nowrap">⏳ CONTINUIDAD:</span>
                   <button
                     onClick={() => handleSimulateCategory('CONTINUITY', 5)}
                     disabled={isCheckingDiagnostic || isLoading}
@@ -602,18 +682,39 @@ export const ChatWindow = ({ chatId }) => {
             </div>
 
             {/* HEADER / CONTROL DEL ACORDEÓN INFERIOR */}
-            <div 
-              onClick={() => setShowControls(!showControls)}
-              className="h-8 bg-[#202c33]/90 hover:bg-[#202c33] border-b border-white/5 flex items-center justify-center cursor-pointer group transition-all duration-200"
-            >
-              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 group-hover:text-emerald-400 transition-colors uppercase tracking-widest">
-                {showControls ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
-                {showControls ? 'Ocultar Controles de Simulación' : 'Ver Panel de Simulación y Test'}
+            <div className="h-8 bg-surface-header/90 border-b border-border-subtle flex items-center justify-between px-4 shrink-0 select-none">
+              <div 
+                onClick={() => !pinnedBottom && setShowControls(!showControls)}
+                className="flex-1 flex items-center justify-center cursor-pointer h-full group"
+              >
+                <div className="flex items-center gap-2 text-[10px] font-bold text-content-secondary group-hover:text-emerald-400 transition-colors uppercase tracking-widest">
+                  {showControls ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
+                  {showControls ? 'Ocultar Controles de Simulación' : 'Ver Panel de Simulación y Test'}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const newState = !pinnedBottom;
+                    setPinnedBottom(newState);
+                    localStorage.setItem('pin_ctrl', JSON.stringify(newState));
+                    if (newState) {
+                      setShowControls(true);
+                      if (!pinnedTop) setShowDiag(false);
+                    }
+                  }}
+                  className={`p-1 hover:bg-white/5 rounded transition-all cursor-pointer ${pinnedBottom ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-500 hover:text-slate-300'}`}
+                  title={pinnedBottom ? "Desfijar Controles" : "Fijar Controles (Siempre Abierto)"}
+                >
+                  {pinnedBottom ? <Pin size={11} className="fill-current" /> : <PinOff size={11} />}
+                </button>
               </div>
             </div>
 
             {/* Input de Mensaje de WhatsApp (Siempre Visible) */}
-            <div className="p-3 bg-[#111b21]">
+            <div className="p-3 bg-surface-panel">
               <ChatInput onSendMessage={sendMessage} />
             </div>
           </div>
@@ -622,8 +723,8 @@ export const ChatWindow = ({ chatId }) => {
 
       {/* Modal de Confirmación de Reset */}
       {showResetConfirm && (
-        <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-[#1f2c34] border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl flex flex-col gap-4 animate-in scale-in duration-200">
+        <div className="absolute inset-0 bg-surface-main/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-surface-header border border-border-subtle rounded-2xl p-6 max-w-sm w-full shadow-2xl flex flex-col gap-4 animate-in scale-in duration-200">
             <div className="flex items-center gap-3 text-rose-400">
               <div className="p-3 bg-rose-500/10 rounded-full border border-rose-500/20">
                 <Trash2 size={24} />

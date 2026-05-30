@@ -64,7 +64,7 @@ export const QuickRegistrationForm = ({ chatId, gender, setGender, onSuccess }) 
 
   return (
     <div className="w-full max-w-md mx-auto my-3 animate-in fade-in slide-in-from-top-4 duration-500">
-      <div className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-slate-900/75 p-5 shadow-xl backdrop-blur-md">
+      <div className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-surface-panel/75 p-5 shadow-xl backdrop-blur-md">
         
         {/* Decoración de gradiente en las esquinas */}
         <div className="absolute -right-16 -top-16 -z-10 h-32 w-32 rounded-full bg-emerald-500/10 blur-xl" />
@@ -76,8 +76,8 @@ export const QuickRegistrationForm = ({ chatId, gender, setGender, onSuccess }) 
             <Sparkles size={18} className="animate-pulse" />
           </div>
           <div>
-            <h3 className="text-sm font-extrabold text-slate-100 uppercase tracking-wider">Onboarding: Cliente Nuevo</h3>
-            <p className="text-[10px] text-slate-400">Complete los datos de registro rápido para este número.</p>
+            <h3 className="text-sm font-extrabold text-content-primary uppercase tracking-wider">Onboarding: Cliente Nuevo</h3>
+            <p className="text-[10px] text-content-secondary">Complete los datos de registro rápido para este número.</p>
           </div>
         </div>
 
@@ -98,7 +98,7 @@ export const QuickRegistrationForm = ({ chatId, gender, setGender, onSuccess }) 
           
           {/* Nombre Completo */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <label className="text-[10px] font-black text-content-secondary uppercase tracking-wider flex items-center gap-1.5">
               <User size={12} className="text-emerald-400/80" /> Nombre Completo
             </label>
             <div className="relative">
@@ -108,21 +108,21 @@ export const QuickRegistrationForm = ({ chatId, gender, setGender, onSuccess }) 
                 onChange={(e) => setName(e.target.value)}
                 disabled={isSubmitting}
                 placeholder="Ej. Juan Pérez"
-                className="w-full rounded-xl border border-white/5 bg-slate-950/70 py-2.5 pl-3.5 pr-3.5 text-xs text-slate-100 placeholder:text-slate-600 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all duration-300 shadow-inner"
+                className="w-full rounded-xl border border-bubble-border bg-surface-input/70 py-2.5 pl-3.5 pr-3.5 text-xs text-content-primary placeholder:text-content-secondary focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all duration-300 shadow-inner"
               />
             </div>
           </div>
 
           {/* Tipo de Documento */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <label className="text-[10px] font-black text-content-secondary uppercase tracking-wider flex items-center gap-1.5">
               <CreditCard size={12} className="text-emerald-400/80" /> Tipo de Documento
             </label>
             <select
               value={documentType}
               onChange={(e) => setDocumentType(e.target.value)}
               disabled={isSubmitting}
-              className="w-full rounded-xl border border-white/5 bg-slate-950/70 p-2.5 text-xs text-slate-100 focus:border-emerald-500/50 focus:outline-none transition-all duration-300 shadow-inner"
+              className="w-full rounded-xl border border-bubble-border bg-surface-input/70 p-2.5 text-xs text-content-primary focus:border-emerald-500/50 focus:outline-none transition-all duration-300 shadow-inner"
             >
               <option value="Cédula de Ciudadanía">Cédula de Ciudadanía (CC)</option>
               <option value="Tarjeta de Identidad">Tarjeta de Identidad (TI)</option>
@@ -133,7 +133,7 @@ export const QuickRegistrationForm = ({ chatId, gender, setGender, onSuccess }) 
 
           {/* Número de Documento */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <label className="text-[10px] font-black text-content-secondary uppercase tracking-wider flex items-center gap-1.5">
               <CreditCard size={12} className="text-emerald-400/80" /> Número de Documento / ID
             </label>
             <input
@@ -142,16 +142,16 @@ export const QuickRegistrationForm = ({ chatId, gender, setGender, onSuccess }) 
               onChange={(e) => setDocumentNumber(e.target.value)}
               disabled={isSubmitting}
               placeholder="Ej. 10203040"
-              className="w-full rounded-xl border border-white/5 bg-slate-950/70 py-2.5 px-3.5 text-xs text-slate-100 placeholder:text-slate-600 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all duration-300 shadow-inner"
+              className="w-full rounded-xl border border-bubble-border bg-surface-input/70 py-2.5 px-3.5 text-xs text-content-primary placeholder:text-content-secondary focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all duration-300 shadow-inner"
             />
           </div>
 
           {/* Selector de Género en el Formulario */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <label className="text-[10px] font-black text-content-secondary uppercase tracking-wider flex items-center gap-1.5">
               <Users size={12} className="text-emerald-400/80" /> Género
             </label>
-            <div className="flex bg-slate-950/80 rounded-xl p-1 border border-white/5 shadow-inner w-full">
+            <div className="flex bg-surface-main/80 rounded-xl p-1 border border-bubble-border shadow-inner w-full">
               <button
                 type="button"
                 onClick={() => handleGenderChange('M')}
@@ -159,7 +159,7 @@ export const QuickRegistrationForm = ({ chatId, gender, setGender, onSuccess }) 
                 className={`flex-1 py-2 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-[0.97] cursor-pointer ${
                   gender === 'M'
                     ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/20'
-                    : 'text-slate-500 hover:text-slate-400'
+                    : 'text-content-secondary hover:text-content-primary'
                 }`}
               >
                 👨 Caballero
@@ -171,7 +171,7 @@ export const QuickRegistrationForm = ({ chatId, gender, setGender, onSuccess }) 
                 className={`flex-1 py-2 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-[0.97] cursor-pointer ${
                   gender === 'F'
                     ? 'bg-pink-600 text-white shadow-lg shadow-pink-500/20'
-                    : 'text-slate-500 hover:text-slate-400'
+                    : 'text-content-secondary hover:text-content-primary'
                 }`}
               >
                 👩 Dama

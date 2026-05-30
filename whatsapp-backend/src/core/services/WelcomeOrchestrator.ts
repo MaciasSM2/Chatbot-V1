@@ -120,9 +120,9 @@ export class WelcomeOrchestrator {
           finalMessage = onboardingTemplates[onboardingRandomIndex]?.text || "";
         } else {
           if (category === 'INITIATION') {
-            finalMessage = "¡Hola! 👋 Te escribe el equipo de atención. Queremos brindarte la mejor experiencia, pero notamos que aún no estás en nuestros registros. Para empezar, ¿serías tan amable de indicarme tu nombre completo y tu número de identificación? Con esto podremos crear tu ficha de atención personalizada.";
+            finalMessage = "¡Hola! 👋 Te saluda el equipo de atención. Notamos que no estás en nuestros registros. ¿Ya te encuentras registrado?";
           } else {
-            finalMessage = "¡Hola! Bienvenido. 👋 Es un gusto saludarte. Veo que es la primera vez que nos escribes. Antes de continuar con tu solicitud, por favor ayúdame con tu nombre y número de cédula (o ID) para registrarte en nuestro sistema y darte una atención oficial. ¡Es solo un momento!";
+            finalMessage = "¡Hola! Bienvenido. 👋 Veo que es la primera vez que nos escribes. ¿Ya te encuentras registrado?";
           }
         }
       } else {
@@ -208,8 +208,8 @@ export class WelcomeOrchestrator {
       const text = onboarding.length > 0 
         ? (onboarding[Math.floor(Math.random() * onboarding.length)]?.text || "")
         : (category === 'INITIATION'
-            ? "¡Hola! 👋 Te escribe el equipo de atención. Queremos brindarte la mejor experiencia, pero notamos que aún no estás en nuestros registros. Para empezar, ¿serías tan amable de indicarme tu nombre completo y tu número de identificación? Con esto podremos crear tu ficha de atención personalizada."
-            : "¡Hola! Bienvenido. 👋 Es un gusto saludarte. Veo que es la primera vez que nos escribes. Antes de continuar con tu solicitud, por favor ayúdame con tu nombre y número de cédula (o ID) para registrarte en nuestro sistema y darte una atención oficial. ¡Es solo un momento!");
+            ? "¡Hola! 👋 Te saluda el equipo de atención. Notamos que no estás en nuestros registros. ¿Ya te encuentras registrado?"
+            : "¡Hola! Bienvenido. 👋 Veo que es la primera vez que nos escribes. ¿Ya te encuentras registrado?");
       return `[TEST-COLOMBIA] [${dayType}] ${text}`;
     }
 

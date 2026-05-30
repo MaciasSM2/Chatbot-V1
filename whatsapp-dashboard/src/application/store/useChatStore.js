@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { io } from 'socket.io-client';
 import { WhatsAppChatRepository } from '../../infrastructure/repositories/WhatsAppChatRepository';
 import { Message } from '../../core/entities/Message';
+import { ClientPersistenceService } from '../services/ClientPersistenceService';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL_BASE || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const chatRepository = new WhatsAppChatRepository(API_URL);
@@ -107,12 +108,23 @@ export const useChatStore = create((set, get) => ({
   setActiveChat: (chatId) => set({ activeChatId: chatId }),
   setHighlightedMessageId: (id) => set({ highlightedMessageId: id }),
 
-  // Carga todas las sesiones con chats activos
   loadActiveChats: async () => {
     set({ isLoadingActive: true });
     try {
       const chats = await chatRepository.getActiveChats();
       set({ activeChats: chats, isLoadingActive: false });
+      
+      // Auto-sync registered chats to ClientPersistenceService
+      chats.forEach(chat => {
+        if (chat.isRegistered && chat.metadata?.fullName) {
+          ClientPersistenceService.save({
+            phone: chat.userId,
+            fullName: chat.metadata.fullName,
+            identification: chat.metadata.identification || 'N/A',
+            gender: chat.metadata.gender || 'No especificado'
+          }, 'chat');
+        }
+      });
     } catch (error) {
       console.error("[useChatStore] Error al cargar chats activos:", error);
       set({ isLoadingActive: false });
@@ -333,6 +345,21 @@ export const useChatStore = create((set, get) => ({
 
       // 3. Pedimos el saludo específico al Backend con los parámetros exactos de simulación
       const baseUrl = API_URL.endsWith('/api') ? API_URL : `${API_URL}/api`;
+      
+      // Intentar obtener datos locales del cliente si es existente
+      let localClientData = {};
+      if (config.profile === 'EXISTING') {
+        const allClients = ClientPersistenceService.getAll();
+        const found = allClients.find(c => c.phone === chatId);
+        if (found) {
+          localClientData = {
+            fullName: found.fullName,
+            identification: found.identification,
+            gender: found.gender === 'Caballero' ? 'M' : 'F'
+          };
+        }
+      }
+
       const response = await fetch(`${baseUrl}/test/greeting/${config.category}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -341,8 +368,9 @@ export const useChatStore = create((set, get) => ({
           isNewClient: config.profile === 'NEW',
           dayType: config.dayType,
           timePeriod: config.timePeriod,
-          gender: config.gender,
-          initialState: config.initialState
+          gender: localClientData.gender || config.gender,
+          initialState: config.initialState,
+          ...localClientData
         })
       });
 

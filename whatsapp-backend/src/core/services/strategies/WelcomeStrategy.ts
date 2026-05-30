@@ -9,7 +9,7 @@ export class WelcomeStrategy implements IBotStrategy {
     const result = await this.welcomeOrchestrator.handleIncomingWelcome(userId);
 
     return {
-      nextStep: result.expectsDataInput ? "AWAITING_NAME" : "AWAITING_MENU_OPTION",
+      nextStep: result.expectsDataInput ? "CHECKING_REGISTRATION" : "AWAITING_MENU_OPTION",
       responseMessage: result.message
     };
   }
