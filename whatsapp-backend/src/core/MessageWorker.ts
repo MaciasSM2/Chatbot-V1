@@ -63,7 +63,7 @@ export class MessageWorker {
     }
   }
 
-  public async processMessageDirectly(messageId: string, userId: string, messageBody: string): Promise<void> {
+  public async processMessageDirectly(messageId: string, userId: string, messageBody: string, customResponse?: string | null): Promise<void> {
     logger.info("Procesando mensaje directamente", { messageId, userId });
 
     const userMsg = new Message(
@@ -109,7 +109,11 @@ export class MessageWorker {
         let bypassOrchestrator = false;
         let semanticResolution = null;
 
-        if (session.currentStep === 'AWAITING_MENU_OPTION') {
+        if (customResponse) {
+          responseMessage = customResponse;
+          bypassOrchestrator = true;
+          taskOrchestrator.logEvent(userId, `Test Custom Response: "${customResponse.substring(0, 35)}..."`);
+        } else if (session.currentStep === 'AWAITING_MENU_OPTION') {
           const menuOptions = ["1", "2", "3", "soporte", "ventas", "horarios"];
           semanticResolution = resolveAmbiguity(messageBody, menuOptions);
           taskOrchestrator.logEvent(userId, `Análisis semántico: coincidencia "${semanticResolution.match.option}" (Dist: ${semanticResolution.match.distance}, Tipo: ${semanticResolution.type})`);
@@ -217,9 +221,9 @@ export class MessageWorker {
           logger.info("Procesando recordatorio de continuidad", { jobId: job.id, userId, minutes });
           await this.processContinuityDirectly(userId, minutes);
         } else {
-          const { messageId, userId, messageBody } = job.data;
+          const { messageId, userId, messageBody, customResponse } = job.data;
           logger.info("Procesando mensaje de la cola", { jobId: job.id, userId });
-          await this.processMessageDirectly(messageId, userId, messageBody);
+          await this.processMessageDirectly(messageId, userId, messageBody, customResponse);
         }
         
       }, { 

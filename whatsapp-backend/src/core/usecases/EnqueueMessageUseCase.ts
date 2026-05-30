@@ -4,7 +4,7 @@ import logger from "../../infrastructure/logging/Logger";
 import { ContinuityService } from "../services/ContinuityService";
 
 export class EnqueueMessageUseCase {
-  private fallbackProcessor?: (messageId: string, userId: string, messageBody: string) => Promise<void>;
+  private fallbackProcessor?: (messageId: string, userId: string, messageBody: string, customResponse?: string | null) => Promise<void>;
   private processedMessages = new Map<string, number>();
 
   constructor(
@@ -23,11 +23,11 @@ export class EnqueueMessageUseCase {
     }, 3600000);
   }
 
-  public registerFallbackProcessor(processor: (messageId: string, userId: string, messageBody: string) => Promise<void>) {
+  public registerFallbackProcessor(processor: (messageId: string, userId: string, messageBody: string, customResponse?: string | null) => Promise<void>) {
     this.fallbackProcessor = processor;
   }
 
-  public async execute(messageId: string, userId: string, messageBody: string): Promise<boolean> {
+  public async execute(messageId: string, userId: string, messageBody: string, customResponse?: string | null): Promise<boolean> {
     if (this.continuityService) {
       await this.continuityService.scheduleFollowUps(userId);
     }
@@ -44,7 +44,7 @@ export class EnqueueMessageUseCase {
 
         await this.messageQueue.add(
           "process-whatsapp-message",
-          { messageId, userId, messageBody },
+          { messageId, userId, messageBody, customResponse },
           {
             attempts: 3,
             backoff: {
@@ -70,7 +70,7 @@ export class EnqueueMessageUseCase {
 
     if (this.fallbackProcessor) {
       // Ejecutar de forma asíncrona para no bloquear el webhook HTTP
-      this.fallbackProcessor(messageId, userId, messageBody).catch(e => {
+      this.fallbackProcessor(messageId, userId, messageBody, customResponse).catch(e => {
         logger.error("Error en procesamiento directo de fallback", { error: e.message });
       });
       return true;

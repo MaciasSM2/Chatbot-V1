@@ -6,12 +6,16 @@
 import React, { useState } from 'react';
 import { Send, Smile, Paperclip, Mic } from 'lucide-react';
 import { QuickTestBar } from './QuickTestBar';
+import { QuickActionManager } from './QuickActionManager';
 import { useChatStore } from '../../../application/store/useChatStore';
 
 export const ChatInput = ({ onSendMessage }) => {
   const [text, setText] = useState('');
+  const [showActionManager, setShowActionManager] = useState(false);
   const triggerContinuity = useChatStore((state) => state.triggerContinuity);
   const activeChatId = useChatStore((state) => state.activeChatId);
+  const quickActions = useChatStore((state) => state.quickActions);
+  const setQuickActions = useChatStore((state) => state.setQuickActions);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -21,23 +25,36 @@ export const ChatInput = ({ onSendMessage }) => {
     }
   };
 
-  const handleQuickAction = (payload) => {
+  const handleQuickAction = (action) => {
+    const { payload, response } = action;
     if (payload === '[TIMEOUT_TRIGGER]') {
       console.log("⚡ Simulando abandono de usuario (Ghosting)...");
       if (activeChatId) {
         triggerContinuity(activeChatId, 5);
       }
     } else {
-      onSendMessage(payload);
+      onSendMessage(payload, response || null);
     }
   };
 
   const hasText = text.trim().length > 0;
 
   return (
-    <div className="flex flex-col bg-[#111b21] w-full select-none">
+    <div className="flex flex-col bg-[#111b21] w-full select-none relative">
       {/* Barra de Acciones de Prueba Rápidas */}
-      <QuickTestBar onAction={handleQuickAction} />
+      <QuickTestBar 
+        actions={quickActions} 
+        onAction={handleQuickAction} 
+        onManageActions={() => setShowActionManager(true)}
+      />
+
+      {showActionManager && (
+        <QuickActionManager 
+          actions={quickActions} 
+          setActions={setQuickActions} 
+          onClose={() => setShowActionManager(false)}
+        />
+      )}
 
       {/* Input de Mensaje Real */}
       <form onSubmit={handleSubmit} className="flex items-center gap-3 w-full bg-[#111b21] p-3">

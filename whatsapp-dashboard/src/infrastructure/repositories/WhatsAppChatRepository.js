@@ -50,7 +50,7 @@ export class WhatsAppChatRepository extends IChatRepository {
   /**
    * Envía el mensaje al Webhook real del Backend
    */
-  async sendMessage(chatId, text) {
+  async sendMessage(chatId, text, customResponse = null) {
     try {
       console.log(`[WhatsAppChatRepository] Enviando mensaje real a ${chatId}: ${text}`);
       const response = await fetch(`${this._baseUrl}/webhook`, {
@@ -59,7 +59,8 @@ export class WhatsAppChatRepository extends IChatRepository {
         body: JSON.stringify({
           userId: chatId,      // El ID que usa el simulador
           messageBody: text,   // El texto del input
-          messageId: `sim_${Date.now()}` // ID único para evitar duplicados en Redis
+          messageId: `sim_${Date.now()}`, // ID único para evitar duplicados en Redis
+          customResponse: customResponse
         })
       });
 

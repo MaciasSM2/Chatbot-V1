@@ -32,6 +32,46 @@ export const useChatStore = create((set, get) => ({
   isConfiguring: false,
 
   setIsConfiguring: (val) => set({ isConfiguring: val }),
+  quickActions: (() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('chat_quick_actions');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) {}
+      }
+    }
+    return [
+      { 
+        id: 'typo', 
+        label: 'Error de Dedo', 
+        payload: 'Quiero pagaar', 
+        response: "No estoy seguro, pero ¿quisiste decir Pagar? Escribe 'Sí' para continuar o 'No' para volver al menú."
+      },
+      { 
+        id: 'ghosting', 
+        label: 'Simular Silencio', 
+        payload: '[TIMEOUT_TRIGGER]', 
+        response: "¡Hola! Seguimos aquí. 👋 Notamos que no has respondido, ¿deseas continuar con tu solicitud o necesitas ayuda adicional?"
+      },
+      { 
+        id: 'payment', 
+        label: 'Comando Pago', 
+        payload: 'Pagar mi factura', 
+        response: "¡Claro! Generando tu link de pago seguro... 💳 [LINK]. Recuerda que tienes 24h para completarlo."
+      },
+      { 
+        id: 'confused', 
+        label: 'Mensaje Aleatorio', 
+        payload: 'XyZ123', 
+        response: "Lo siento, no logré entender eso. 😕 ¿Podrías intentar elegir una opción del menú o escribir tu duda de otra forma?"
+      }
+    ];
+  })(),
+  setQuickActions: (actions) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('chat_quick_actions', JSON.stringify(actions));
+    }
+    set({ quickActions: actions });
+  },
   toggleFullScreen: () => set((state) => ({ isFullScreen: !state.isFullScreen })),
   toggleChatPause: async (chatId) => {
     const { activeChats } = get();
@@ -174,7 +214,7 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  sendMessage: async (text) => {
+  sendMessage: async (text, customResponse = null) => {
     const { activeChatId, messages } = get();
     if (!activeChatId || !text.trim()) return;
 
@@ -217,7 +257,7 @@ export const useChatStore = create((set, get) => ({
         updateLocalStatus('sent');
 
         // --- 2. Enviar mensaje real al backend de forma asíncrona ---
-        const realMsg = await chatRepository.sendMessage(activeChatId, text);
+        const realMsg = await chatRepository.sendMessage(activeChatId, text, customResponse);
         
         // --- 3. Simular Latencia de Entrega ---
         await new Promise((resolve) => setTimeout(resolve, Math.random() * 500 + 400));

@@ -295,9 +295,9 @@ async function startup() {
   worker.start();
 
   // Registrar fallback de procesamiento directo si falla el encolamiento (Redis offline)
-  enqueueUseCase.registerFallbackProcessor(async (messageId, userId, messageBody) => {
+  enqueueUseCase.registerFallbackProcessor(async (messageId, userId, messageBody, customResponse) => {
     if (worker) {
-      await worker.processMessageDirectly(messageId, userId, messageBody);
+      await worker.processMessageDirectly(messageId, userId, messageBody, customResponse);
     } else {
       logger.error("No se pudo procesar el mensaje directo: el worker no está inicializado.");
     }

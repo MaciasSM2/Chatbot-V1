@@ -29,11 +29,14 @@ export class WhatsappWebhookController {
         messageBody = body.messageBody;
       }
 
+      const customResponse = body.customResponse || null;
+
       logger.info("Webhook recibido", {
         correlationId,
         messageId,
         userId,
-        bodySize: JSON.stringify(body).length
+        bodySize: JSON.stringify(body).length,
+        hasCustomResponse: !!customResponse
       });
 
       if (!userId || messageBody === undefined || messageBody.trim() === "") {
@@ -42,7 +45,7 @@ export class WhatsappWebhookController {
         return;
       }
 
-      await this.enqueueMessageUseCase.execute(messageId, userId, messageBody);
+      await this.enqueueMessageUseCase.execute(messageId, userId, messageBody, customResponse);
       messageCounter.inc({ status: "success" });
 
       res.status(200).send("EVENT_RECEIVED");
