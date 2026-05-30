@@ -6,7 +6,7 @@ import { ChatInput } from './ChatInput';
 import { QuickRegistrationForm } from './QuickRegistrationForm';
 import { TestConfigWizard } from './TestConfigWizard';
 import { ChatHeader } from './ChatHeader';
-import { Search, MoreVertical, Phone, Video, ArrowLeft, Shield, Moon, AlertTriangle, Trash2, Sliders, X, Maximize2, Minimize2, Cpu } from 'lucide-react';
+import { Search, MoreVertical, Phone, Video, ArrowLeft, Shield, Moon, AlertTriangle, Trash2, Sliders, X, Maximize2, Minimize2, Cpu, ChevronUp, ChevronDown } from 'lucide-react';
 import { usePushNotifications } from '../../../application/hooks/usePushNotifications';
 import { useSocketEvents } from '../../../application/hooks/useSocketEvents';
 import { generateInitialFrame } from '../../../application/services/SimulationService';
@@ -82,6 +82,8 @@ export const ChatWindow = ({ chatId }) => {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showDebugSidebar, setShowDebugSidebar] = useState(false);
+  const [showDiag, setShowDiag] = useState(false);
+  const [showControls, setShowControls] = useState(false);
 
   const effectiveIsNonWorkable = activeScenario ? activeScenario.isNonWorkable : isNonWorkableContext;
   const effectiveDayType = activeScenario ? activeScenario.dayType : dayType;
@@ -275,102 +277,114 @@ export const ChatWindow = ({ chatId }) => {
           </button>
       </ChatHeader>
 
-      {/* Panel de Diagnóstico Premium */}
+      {/* Acordeón Superior: Diagnóstico y Alertas */}
       {!isConfiguring && !isBooting && (
-        <div className="px-4 py-3 bg-[#182229]/80 backdrop-blur-md border-b border-white/5 flex flex-col gap-2.5 transition-all duration-300">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="border-b border-white/5 select-none bg-[#202c33]/30">
+          <div 
+            onClick={() => setShowDiag(!showDiag)}
+            className="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:bg-[#202c33]/40 transition-colors"
+          >
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-400 tracking-wider">DIAGNÓSTICO:</span>
-                <span className={`flex items-center gap-1.5 text-xs font-extrabold px-2 py-0.5 rounded-full select-none tracking-wide ${
-                  diagnostic.status === 'healthy' 
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-                    : diagnostic.status === 'checking'
-                      ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse'
-                      : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${
-                    diagnostic.status === 'healthy' 
-                      ? 'bg-emerald-400 animate-pulse' 
-                      : diagnostic.status === 'checking'
-                        ? 'bg-amber-400 animate-ping'
-                        : 'bg-rose-400 animate-ping'
-                  }`} />
-                  {diagnostic.status === 'healthy' ? 'SISTEMA OK' : diagnostic.status === 'checking' ? 'VERIFICANDO...' : 'SISTEMA CRÍTICO'}
-                </span>
-              </div>
-
-              {/* Detalles de servicios */}
-              <div className="flex items-center gap-2 select-none">
-                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg border transition-all duration-300 ${
-                  diagnostic.database === 'connected'
-                    ? 'bg-emerald-500/5 text-emerald-400/90 border-emerald-500/10'
-                    : diagnostic.database === 'checking'
-                      ? 'bg-amber-500/5 text-amber-400/90 border-amber-500/10 animate-pulse'
-                      : 'bg-rose-500/10 text-rose-400 border-rose-500/30 font-bold shadow-[0_0_10px_rgba(239,68,68,0.1)]'
-                }`}>
-                  Postgres: {diagnostic.database === 'connected' ? '✅ OK' : diagnostic.database === 'checking' ? '⏳' : '❌ ERROR'}
-                </span>
-
-                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg border transition-all duration-300 ${
-                  diagnostic.redis === 'connected'
-                    ? 'bg-emerald-500/5 text-emerald-400/90 border-emerald-500/10'
-                    : diagnostic.redis === 'checking'
-                      ? 'bg-amber-500/5 text-amber-400/90 border-amber-500/10 animate-pulse'
-                      : 'bg-rose-500/10 text-rose-400 border-rose-500/30 font-bold shadow-[0_0_10px_rgba(239,68,68,0.1)]'
-                }`}>
-                  Redis: {diagnostic.redis === 'connected' ? '✅ OK' : diagnostic.redis === 'checking' ? '⏳' : '❌ ERROR'}
-                </span>
-
-                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg border transition-all duration-300 ${
-                  activeScenario?.apiStatus === 'ERROR_500' ? 'bg-rose-500/10 text-rose-400 border-rose-500/30 font-bold shadow-[0_0_10px_rgba(239,68,68,0.1)]' :
-                  activeScenario?.apiStatus === 'TIMEOUT' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 font-bold' :
-                  'bg-emerald-500/5 text-emerald-400/90 border-emerald-500/10'
-                }`}>
-                  Mock Meta: {activeScenario?.apiStatus === 'ERROR_500' ? '❌ ERROR 500' : activeScenario?.apiStatus === 'TIMEOUT' ? '⏳ TIMEOUT' : '✅ OK'}
-                </span>
-              </div>
+              <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full select-none tracking-wide transition-all ${
+                diagnostic.status === 'healthy' 
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                  : diagnostic.status === 'checking'
+                    ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse'
+                    : 'bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold'
+              }`}>
+                Diagnóstico: {diagnostic.status === 'healthy' ? 'Sistema OK' : diagnostic.status === 'checking' ? 'Verificando...' : 'Sistema Crítico'}
+              </span>
+              {!showDiag && (
+                <div className="flex gap-2.5 text-[9px] font-bold tracking-wider opacity-60 select-none">
+                  <span className={diagnostic.database === 'connected' ? 'text-emerald-400' : 'text-rose-400'}>
+                    Postgres: {diagnostic.database === 'connected' ? '✔' : '✘'}
+                  </span>
+                  <span className={diagnostic.redis === 'connected' ? 'text-emerald-400' : 'text-rose-400'}>
+                    Redis: {diagnostic.redis === 'connected' ? '✔' : '✘'}
+                  </span>
+                  <span className={activeScenario?.apiStatus === 'ERROR_500' ? 'text-rose-400' : activeScenario?.apiStatus === 'TIMEOUT' ? 'text-amber-400' : 'text-emerald-400'}>
+                    Meta: {activeScenario?.apiStatus === 'ERROR_500' ? '500' : activeScenario?.apiStatus === 'TIMEOUT' ? '⏳' : 'OK'}
+                  </span>
+                </div>
+              )}
             </div>
-
-            {/* Botón Re-diagnosticar */}
-            <button 
-              onClick={runDiagnostic}
-              disabled={isCheckingDiagnostic}
-              className="text-[10px] font-bold text-slate-400 hover:text-emerald-400 disabled:text-slate-600 transition-colors uppercase tracking-wider cursor-pointer active:scale-95 select-none"
-            >
-              {isCheckingDiagnostic ? 'Analizando...' : '🔄 Re-Diagnosticar'}
-            </button>
+            {showDiag ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
           </div>
 
-          {/* Alerta Roja si Postgres o Redis está desconectado */}
-          {diagnostic.status === 'unhealthy' && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-lg shadow-rose-950/20 animate-in fade-in slide-in-from-top-2 duration-300">
-              <div className="flex flex-col gap-1">
-                <span className="font-extrabold flex items-center gap-1.5 text-rose-400">
-                  ⚠️ ALERTA DE CONFIGURACIÓN (MODO LOCAL / DEMO ACTIVO)
-                </span>
-                <span className="text-[11px] text-rose-300/90 leading-relaxed">
-                  {diagnostic.database === 'disconnected' && '• La base de datos PostgreSQL no responde o no está inicializada. El sistema opera con persistencia temporal en memoria.'}
-                  {diagnostic.database === 'disconnected' && diagnostic.redis === 'disconnected' && <br />}
-                  {diagnostic.redis === 'disconnected' && '• El servicio de colas y sesiones Redis está desconectado. Las colas asíncronas se simulan mediante procesamiento directo.'}
-                </span>
+          {/* CONTENIDO COLAPSABLE SUPERIOR */}
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showDiag ? 'max-h-[300px] border-t border-white/5 bg-[#182229]/80 backdrop-blur-md' : 'max-h-0'}`}>
+            <div className="p-4 flex flex-col gap-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  {/* Detalles de servicios */}
+                  <div className="flex items-center gap-2 select-none">
+                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg border transition-all duration-300 ${
+                      diagnostic.database === 'connected'
+                        ? 'bg-emerald-500/5 text-emerald-400/90 border-emerald-500/10'
+                        : 'bg-rose-500/10 text-rose-400 border-rose-500/30 font-bold shadow-[0_0_10px_rgba(239,68,68,0.1)]'
+                    }`}>
+                      Postgres: {diagnostic.database === 'connected' ? '✅ OK' : '❌ ERROR'}
+                    </span>
+
+                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg border transition-all duration-300 ${
+                      diagnostic.redis === 'connected'
+                        ? 'bg-emerald-500/5 text-emerald-400/90 border-emerald-500/10'
+                        : 'bg-rose-500/10 text-rose-400 border-rose-500/30 font-bold shadow-[0_0_10px_rgba(239,68,68,0.1)]'
+                    }`}>
+                      Redis: {diagnostic.redis === 'connected' ? '✅ OK' : '❌ ERROR'}
+                    </span>
+
+                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg border transition-all duration-300 ${
+                      activeScenario?.apiStatus === 'ERROR_500' ? 'bg-rose-500/10 text-rose-400 border-rose-500/30 font-bold shadow-[0_0_10px_rgba(239,68,68,0.1)]' :
+                      activeScenario?.apiStatus === 'TIMEOUT' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 font-bold' :
+                      'bg-emerald-500/5 text-emerald-400/90 border-emerald-500/10'
+                    }`}>
+                      Mock Meta: {activeScenario?.apiStatus === 'ERROR_500' ? '❌ ERROR 500' : activeScenario?.apiStatus === 'TIMEOUT' ? '⏳ TIMEOUT' : '✅ OK'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Botón Re-diagnosticar */}
+                <button 
+                  onClick={runDiagnostic}
+                  disabled={isCheckingDiagnostic}
+                  className="text-[10px] font-bold text-slate-400 hover:text-emerald-400 disabled:text-slate-600 transition-colors uppercase tracking-wider cursor-pointer active:scale-95 select-none"
+                >
+                  {isCheckingDiagnostic ? 'Analizando...' : '🔄 Re-Diagnosticar'}
+                </button>
               </div>
-              <button
-                onClick={runDiagnostic}
-                disabled={isCheckingDiagnostic}
-                className="shrink-0 px-4 py-2 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer active:scale-95 transition-all duration-300 shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:shadow-[0_0_25px_rgba(239,68,68,0.6)] animate-pulse flex items-center justify-center gap-1.5"
-              >
-                {isCheckingDiagnostic ? (
-                  <>
-                    <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    REINTENTANDO...
-                  </>
-                ) : (
-                  '🔄 REINTENTAR CONEXIÓN'
-                )}
-              </button>
+
+              {/* Alerta Roja si Postgres o Redis está desconectado */}
+              {diagnostic.status === 'unhealthy' && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-lg shadow-rose-950/20 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex flex-col gap-1">
+                    <span className="font-extrabold flex items-center gap-1.5 text-rose-400">
+                      ⚠️ ALERTA DE CONFIGURACIÓN (MODO LOCAL / DEMO ACTIVO)
+                    </span>
+                    <span className="text-[11px] text-rose-300/90 leading-relaxed">
+                      {diagnostic.database === 'disconnected' && '• La base de datos PostgreSQL no responde o no está inicializada. El sistema opera con persistencia temporal en memoria.'}
+                      {diagnostic.database === 'disconnected' && diagnostic.redis === 'disconnected' && <br />}
+                      {diagnostic.redis === 'disconnected' && '• El servicio de colas y sesiones Redis está desconectado. Las colas asíncronas se simulan mediante procesamiento directo.'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={runDiagnostic}
+                    disabled={isCheckingDiagnostic}
+                    className="shrink-0 px-4 py-2 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer active:scale-95 transition-all duration-300 shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:shadow-[0_0_25px_rgba(239,68,68,0.6)] animate-pulse flex items-center justify-center gap-1.5"
+                  >
+                    {isCheckingDiagnostic ? (
+                      <>
+                        <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        REINTENTANDO...
+                      </>
+                    ) : (
+                      '🔄 REINTENTAR CONEXIÓN'
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       )}
 
@@ -504,86 +518,104 @@ export const ChatWindow = ({ chatId }) => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Selector de Perfil y Género de Cliente */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 bg-[#182229]/90 border-t border-white/5 px-4 backdrop-blur-md z-10 relative">
-            <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Perfil:</span>
-              <div className="flex bg-slate-950/80 rounded-xl p-1 border border-white/5 shadow-inner">
-                <button 
-                  onClick={() => setIsNewClient(true)}
-                  className={`px-4 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-95 cursor-pointer ${isNewClient ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-500 hover:text-slate-400'}`}
+          {/* Acordeón Inferior: Controles de FSM y Test */}
+          <div className="shrink-0 flex flex-col bg-[#111b21] border-t border-white/5 relative z-10">
+            {/* CONTENIDO COLAPSABLE INFERIOR */}
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showControls ? 'max-h-[400px] border-b border-white/5' : 'max-h-0'}`}>
+              
+              {/* Selector de Perfil y Género de Cliente */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 bg-[#182229]/95 px-4 backdrop-blur-md relative border-b border-white/5">
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Perfil:</span>
+                  <div className="flex bg-slate-950/80 rounded-xl p-1 border border-white/5 shadow-inner">
+                    <button 
+                      onClick={() => setIsNewClient(true)}
+                      className={`px-4 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-95 cursor-pointer ${isNewClient ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-500 hover:text-slate-400'}`}
+                    >
+                      👶 NUEVO
+                    </button>
+                    <button 
+                      onClick={() => setIsNewClient(false)}
+                      className={`px-4 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-95 cursor-pointer ${!isNewClient ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' : 'text-slate-500 hover:text-slate-400'}`}
+                    >
+                      ✅ EXISTENTE
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Género:</span>
+                  <div className="flex bg-slate-950/80 rounded-xl p-1 border border-white/5 shadow-inner">
+                    <button 
+                      onClick={() => setGender('M')}
+                      className={`px-4 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-95 cursor-pointer ${gender === 'M' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/20' : 'text-slate-500 hover:text-slate-400'}`}
+                    >
+                      👨 Caballero
+                    </button>
+                    <button 
+                      onClick={() => setGender('F')}
+                      className={`px-4 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-95 cursor-pointer ${gender === 'F' ? 'bg-pink-600 text-white shadow-lg shadow-pink-500/20' : 'text-slate-500 hover:text-slate-400'}`}
+                    >
+                      👩 Dama
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Barra de Simulación FSM Rápida */}
+              <div className="bg-[#182229]/95 px-4 py-2.5 flex items-center gap-2.5 overflow-x-auto select-none backdrop-blur-md">
+                <span className="text-[10px] font-extrabold text-slate-400 tracking-wider shrink-0">SIMULAR FSM:</span>
+                <button
+                  onClick={() => handleSimulateCategory('INITIATION')}
+                  disabled={isCheckingDiagnostic || isLoading}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-[0_2px_8px_rgba(16,185,129,0.05)] hover:shadow-[0_4px_12px_rgba(16,185,129,0.15)] whitespace-nowrap"
                 >
-                  👶 NUEVO
+                  🚀 Iniciar
                 </button>
-                <button 
-                  onClick={() => setIsNewClient(false)}
-                  className={`px-4 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-95 cursor-pointer ${!isNewClient ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' : 'text-slate-500 hover:text-slate-400'}`}
+                <button
+                  onClick={() => handleSimulateCategory('RESPONSE')}
+                  disabled={isCheckingDiagnostic || isLoading}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-cyan-400 border border-cyan-500/20 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-[0_2px_8px_rgba(6,182,212,0.05)] hover:shadow-[0_4px_12px_rgba(6,182,212,0.15)] whitespace-nowrap"
                 >
-                  ✅ EXISTENTE
+                  💬 Responder
                 </button>
+
+                {/* Botones de Continuidad con Parámetros */}
+                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/5">
+                  <span className="text-[9px] font-extrabold text-slate-400 px-2 uppercase tracking-wider whitespace-nowrap">⏳ CONTINUIDAD:</span>
+                  <button
+                    onClick={() => handleSimulateCategory('CONTINUITY', 5)}
+                    disabled={isCheckingDiagnostic || isLoading}
+                    className="px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-amber-400 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer whitespace-nowrap"
+                  >
+                    5 min
+                  </button>
+                  <button
+                    onClick={() => handleSimulateCategory('CONTINUITY', 15)}
+                    disabled={isCheckingDiagnostic || isLoading}
+                    className="px-3 py-1.5 bg-orange-500/15 hover:bg-orange-500/25 active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-orange-400 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer whitespace-nowrap"
+                  >
+                    15 min
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Género:</span>
-              <div className="flex bg-slate-950/80 rounded-xl p-1 border border-white/5 shadow-inner">
-                <button 
-                  onClick={() => setGender('M')}
-                  className={`px-4 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-95 cursor-pointer ${gender === 'M' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/20' : 'text-slate-500 hover:text-slate-400'}`}
-                >
-                  👨 Caballero
-                </button>
-                <button 
-                  onClick={() => setGender('F')}
-                  className={`px-4 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all duration-300 active:scale-95 cursor-pointer ${gender === 'F' ? 'bg-pink-600 text-white shadow-lg shadow-pink-500/20' : 'text-slate-500 hover:text-slate-400'}`}
-                >
-                  👩 Dama
-                </button>
+            {/* HEADER / CONTROL DEL ACORDEÓN INFERIOR */}
+            <div 
+              onClick={() => setShowControls(!showControls)}
+              className="h-8 bg-[#202c33]/90 hover:bg-[#202c33] border-b border-white/5 flex items-center justify-center cursor-pointer group transition-all duration-200"
+            >
+              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 group-hover:text-emerald-400 transition-colors uppercase tracking-widest">
+                {showControls ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
+                {showControls ? 'Ocultar Controles de Simulación' : 'Ver Panel de Simulación y Test'}
               </div>
             </div>
-          </div>
 
-          {/* Barra de Simulación FSM Rápida */}
-          <div className="bg-[#182229]/95 border-t border-white/5 px-4 py-2.5 flex items-center gap-2.5 overflow-x-auto select-none backdrop-blur-md z-10">
-            <span className="text-[10px] font-extrabold text-slate-400 tracking-wider shrink-0">SIMULAR FSM:</span>
-            <button
-              onClick={() => handleSimulateCategory('INITIATION')}
-              disabled={isCheckingDiagnostic || isLoading}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-[0_2px_8px_rgba(16,185,129,0.05)] hover:shadow-[0_4px_12px_rgba(16,185,129,0.15)] whitespace-nowrap"
-            >
-              🚀 Iniciar
-            </button>
-            <button
-              onClick={() => handleSimulateCategory('RESPONSE')}
-              disabled={isCheckingDiagnostic || isLoading}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-cyan-400 border border-cyan-500/20 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-[0_2px_8px_rgba(6,182,212,0.05)] hover:shadow-[0_4px_12px_rgba(6,182,212,0.15)] whitespace-nowrap"
-            >
-              💬 Responder
-            </button>
-
-            {/* Botones de Continuidad con Parámetros */}
-            <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/5">
-              <span className="text-[9px] font-extrabold text-slate-400 px-2 uppercase tracking-wider whitespace-nowrap">⏳ CONTINUIDAD:</span>
-              <button
-                onClick={() => handleSimulateCategory('CONTINUITY', 5)}
-                disabled={isCheckingDiagnostic || isLoading}
-                className="px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-amber-400 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer whitespace-nowrap"
-              >
-                5 min
-              </button>
-              <button
-                onClick={() => handleSimulateCategory('CONTINUITY', 15)}
-                disabled={isCheckingDiagnostic || isLoading}
-                className="px-3 py-1.5 bg-orange-500/15 hover:bg-orange-500/25 active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-orange-400 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer whitespace-nowrap"
-              >
-                15 min
-              </button>
+            {/* Input de Mensaje de WhatsApp (Siempre Visible) */}
+            <div className="p-3 bg-[#111b21]">
+              <ChatInput onSendMessage={sendMessage} />
             </div>
-          </div>
-
-          {/* Input de Mensaje de WhatsApp */}
-          <div className="p-3 bg-[#111b21] border-t border-white/5">
-            <ChatInput onSendMessage={sendMessage} />
           </div>
         </>
       )}
