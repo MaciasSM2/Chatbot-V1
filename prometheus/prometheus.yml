@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 5s # Frecuencia de raspado por defecto
+  evaluation_interval: 5s # Frecuencia de evaluación de reglas
+
+scrape_configs:
+  # Monitorear el Backend del Chatbot de WhatsApp
+  - job_name: 'chatbot-backend'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['backend:3000']

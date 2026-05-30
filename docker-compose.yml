@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # Base de Datos Relacional (PostgreSQL)
+  postgres:
+    image: postgres:15-alpine
+    container_name: whatsapp_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: whatsapp_bot
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Bus de Mensajes y Cache (Redis)
+  redis:
+    image: redis:7-alpine
+    container_name: whatsapp_redis
+    restart: always
+    command: redis-server --appendonly yes
+
+  # Backend (Orquestador de WhatsApp)
+  backend:
+    build: ./whatsapp-backend
+    container_name: whatsapp_api
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/whatsapp_bot
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      META_API_TOKEN: ${META_API_TOKEN}
+    ports:
+      - "3000:3000"
+
+  # Frontend (Dashboard de Administración)
+  frontend:
+    build: ./whatsapp-dashboard
+    container_name: whatsapp_dashboard
+    ports:
+      - "80:80"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+    depends_on:
+      - backend
