@@ -28,6 +28,7 @@ import { verifyWebhookSignature } from "./interfaces/http/middlewares/webhookSig
 import { WelcomeOrchestrator } from "./core/services/WelcomeOrchestrator";
 import { ContinuityService } from "./core/services/ContinuityService";
 import { DateTimeManager } from "./core/services/DateTimeManager";
+import { injectMockUser, clearMockUser } from "./core/services/MockUserFactory";
 import { HolidayManager } from "./core/services/HolidayManager";
 import { HumanDelayService } from "./core/services/HumanDelayService";
 import { ModuleSettingsService } from "./core/services/ModuleSettingsService";
@@ -734,6 +735,14 @@ async function startup() {
           greeting: "Módulo de Saludos Desactivado por el Administrador",
           message: "Módulo de Saludos Desactivado por el Administrador"
         });
+      }
+
+      if ((userId || 'TEST_BOT_DEBUG') === 'TEST_BOT_DEBUG') {
+        if (!isNewClient) {
+          await injectMockUser(clientRepository, dbPool);
+        } else {
+          await clearMockUser(clientRepository, dbPool);
+        }
       }
 
       const result = await welcomeOrchestrator.validateAndGreet(

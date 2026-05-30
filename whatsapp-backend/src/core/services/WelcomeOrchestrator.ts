@@ -230,7 +230,9 @@ export class WelcomeOrchestrator {
     if (isNewClient) {
       text = text.replace("{{name}}", "");
     } else {
-      text = text.replace("{{name}}", " (USUARIO TEST)");
+      const client = await this.clientRepository.findByPhoneNumber("TEST_BOT_DEBUG");
+      const clientName = client ? `, ${client.name.split(' ')[0]}` : " (USUARIO TEST)";
+      text = text.replace("{{name}}", clientName);
     }
     return `[TEST-COLOMBIA] [${dayType}] ${text}`;
   }
