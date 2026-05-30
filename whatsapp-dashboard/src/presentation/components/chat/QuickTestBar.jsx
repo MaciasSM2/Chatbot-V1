@@ -1,10 +1,11 @@
 /**
  * @file QuickTestBar.jsx
- * @description Barra de botones de prueba dinámicos con atajo para su gestión (CRUD).
+ * @description Barra de botones de prueba dinámicos con soporte para iconos de Lucide dinámicos.
  */
 
 import React from 'react';
-import { MousePointer2, Edit3 } from 'lucide-react';
+import { MousePointer2, Edit3, HelpCircle } from 'lucide-react';
+import { ICON_LIBRARY } from './QuickActionManager';
 
 export const QuickTestBar = ({ actions = [], onAction, onManageActions }) => {
   return (
@@ -21,16 +22,21 @@ export const QuickTestBar = ({ actions = [], onAction, onManageActions }) => {
         <Edit3 size={11} />
       </button>
 
-      {actions.map((action) => (
-        <button
-          key={action.id}
-          type="button"
-          onClick={() => onAction(action)}
-          className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-amber-500/15 bg-amber-500/5 hover:bg-amber-500/15 text-amber-400 hover:text-amber-300 text-[11px] font-bold transition-all active:scale-95 whitespace-nowrap cursor-pointer"
-        >
-          {action.label}
-        </button>
-      ))}
+      {actions.map((action) => {
+        const IconComponent = ICON_LIBRARY[action.icon] || HelpCircle;
+
+        return (
+          <button
+            key={action.id}
+            type="button"
+            onClick={() => onAction(action)}
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-amber-500/15 bg-amber-500/5 hover:bg-amber-500/15 text-amber-400 hover:text-amber-300 text-[11px] font-bold transition-all active:scale-95 whitespace-nowrap cursor-pointer shadow-sm animate-in fade-in zoom-in duration-200"
+          >
+            <IconComponent size={13} className="opacity-80 shrink-0" />
+            {action.label}
+          </button>
+        );
+      })}
     </div>
   );
 };

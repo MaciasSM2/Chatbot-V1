@@ -44,25 +44,29 @@ export const useChatStore = create((set, get) => ({
         id: 'typo', 
         label: 'Error de Dedo', 
         payload: 'Quiero pagaar', 
-        response: "No estoy seguro, pero ¿quisiste decir Pagar? Escribe 'Sí' para continuar o 'No' para volver al menú."
+        response: "No estoy seguro, pero ¿quisiste decir Pagar? Escribe 'Sí' para continuar o 'No' para volver al menú.",
+        icon: 'AlertTriangle'
       },
       { 
         id: 'ghosting', 
         label: 'Simular Silencio', 
         payload: '[TIMEOUT_TRIGGER]', 
-        response: "¡Hola! Seguimos aquí. 👋 Notamos que no has respondido, ¿deseas continuar con tu solicitud o necesitas ayuda adicional?"
+        response: "¡Hola! Seguimos aquí. 👋 Notamos que no has respondido, ¿deseas continuar con tu solicitud o necesitas ayuda adicional?",
+        icon: 'Ghost'
       },
       { 
         id: 'payment', 
         label: 'Comando Pago', 
         payload: 'Pagar mi factura', 
-        response: "¡Claro! Generando tu link de pago seguro... 💳 [LINK]. Recuerda que tienes 24h para completarlo."
+        response: "¡Claro! Generando tu link de pago seguro... 💳 [LINK]. Recuerda que tienes 24h para completarlo.",
+        icon: 'CreditCard'
       },
       { 
         id: 'confused', 
         label: 'Mensaje Aleatorio', 
         payload: 'XyZ123', 
-        response: "Lo siento, no logré entender eso. 😕 ¿Podrías intentar elegir una opción del menú o escribir tu duda de otra forma?"
+        response: "Lo siento, no logré entender eso. 😕 ¿Podrías intentar elegir una opción del menú o escribir tu duda de otra forma?",
+        icon: 'HelpCircle'
       }
     ];
   })(),

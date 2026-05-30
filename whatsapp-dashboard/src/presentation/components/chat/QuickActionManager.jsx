@@ -5,9 +5,24 @@
 
 import React, { useState } from 'react';
 import { Plus, Trash2, Edit3, X, MousePointer2, AlertCircle } from 'lucide-react';
+import * as Icons from 'lucide-react';
+
+export const ICON_LIBRARY = {
+  Zap: Icons.Zap,
+  Shield: Icons.Shield,
+  Ghost: Icons.Ghost,
+  AlertTriangle: Icons.AlertTriangle,
+  CreditCard: Icons.CreditCard,
+  HelpCircle: Icons.HelpCircle,
+  Activity: Icons.Activity,
+  Flame: Icons.Flame,
+  Bug: Icons.Bug,
+  Terminal: Icons.Terminal
+};
 
 export const QuickActionManager = ({ actions, setActions, onClose }) => {
   const [newAction, setNewAction] = useState({ label: '', payload: '', response: '' });
+  const [selectedIcon, setSelectedIcon] = useState('Zap');
   const [error, setError] = useState('');
 
   const handleAdd = () => {
@@ -16,8 +31,9 @@ export const QuickActionManager = ({ actions, setActions, onClose }) => {
       return;
     }
     setError('');
-    setActions([...actions, { ...newAction, id: `action_${Date.now()}` }]);
+    setActions([...actions, { ...newAction, icon: selectedIcon, id: `action_${Date.now()}` }]);
     setNewAction({ label: '', payload: '', response: '' });
+    setSelectedIcon('Zap');
   };
 
   const handleDelete = (id) => {
@@ -63,7 +79,13 @@ export const QuickActionManager = ({ actions, setActions, onClose }) => {
                   <div className="flex-1 grid grid-cols-3 gap-4 mr-4">
                     <div>
                       <span className="text-[8px] font-bold text-slate-500 uppercase block tracking-wider mb-0.5">Etiqueta</span>
-                      <span className="text-xs font-bold text-slate-200">{action.label}</span>
+                      <span className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                        {(() => {
+                          const IconComp = ICON_LIBRARY[action.icon] || Icons.HelpCircle;
+                          return <IconComp size={14} className="text-emerald-400 shrink-0" />;
+                        })()}
+                        {action.label}
+                      </span>
                     </div>
                     <div>
                       <span className="text-[8px] font-bold text-slate-500 uppercase block tracking-wider mb-0.5">Trigger (Usuario)</span>
@@ -130,6 +152,30 @@ export const QuickActionManager = ({ actions, setActions, onClose }) => {
                 value={newAction.response}
                 onChange={e => setNewAction({...newAction, response: e.target.value})}
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Seleccionar Icono del Botón</label>
+              <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 bg-[#111b21] p-3 rounded-2xl border border-white/5">
+                {Object.keys(ICON_LIBRARY).map((iconName) => {
+                  const IconComp = ICON_LIBRARY[iconName];
+                  return (
+                    <button
+                      key={iconName}
+                      type="button"
+                      onClick={() => setSelectedIcon(iconName)}
+                      className={`p-2 rounded-xl border transition-all flex items-center justify-center cursor-pointer active:scale-90 ${
+                        selectedIcon === iconName 
+                          ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400 shadow-[0_2px_8px_rgba(16,185,129,0.1)] border-emerald-500/30' 
+                          : 'border-white/5 bg-[#1b2730]/40 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                      }`}
+                      title={iconName}
+                    >
+                      <IconComp size={16} />
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {error && (
