@@ -5,8 +5,7 @@
 
 import { Client } from "../entities/Client";
 import { IClientRepository } from "../interfaces/repositories/IClientRepository";
-import { PostgresClientRepository } from "../../providers/database/PostgresClientRepository";
-import { Pool } from "pg";
+import { MySQLClientRepository } from "../../providers/database/MySQLClientRepository";
 
 export const MOCK_EXISTING_USER = new Client(
   "mock-andres-uuid",
@@ -30,30 +29,16 @@ export const MOCK_EXISTING_USER = new Client(
 /**
  * Inyecta al usuario maestro Andrés Valencia en los repositorios de persistencia
  */
-export const injectMockUser = async (clientRepository: IClientRepository, dbPool?: Pool) => {
+export const injectMockUser = async (clientRepository: IClientRepository, _dbPool?: any) => {
   // 1. Guardar en memoria local
-  PostgresClientRepository.inMemoryClients.set("TEST_BOT_DEBUG", MOCK_EXISTING_USER);
+  MySQLClientRepository.inMemoryClients.set("TEST_BOT_DEBUG", MOCK_EXISTING_USER);
   
-  // 2. Guardar en base de datos Postgres si está disponible
-  if (dbPool) {
-    try {
-      await dbPool.query(
-        `INSERT INTO clients (id, phone_number, name, is_registered, metadata) 
-         VALUES ($1, $2, $3, $4, $5) 
-         ON CONFLICT (phone_number) 
-         DO UPDATE SET name = $3, is_registered = $4, metadata = $5`,
-        [
-          MOCK_EXISTING_USER.id, 
-          MOCK_EXISTING_USER.phoneNumber, 
-          MOCK_EXISTING_USER.name, 
-          MOCK_EXISTING_USER.isRegistered, 
-          JSON.stringify(MOCK_EXISTING_USER.metadata)
-        ]
-      );
-      console.log("✅ Andrés Felipe Valencia guardado exitosamente en Postgres.");
-    } catch (err) {
-      console.log("⚠️ No se pudo guardar Andrés Valencia en Postgres (operando en memoria fallback)");
-    }
+  // 2. Guardar en base de datos MySQL/MariaDB si está disponible
+  try {
+    await clientRepository.save(MOCK_EXISTING_USER);
+    console.log("✅ Andrés Felipe Valencia guardado exitosamente.");
+  } catch (err: any) {
+    console.log("⚠️ No se pudo guardar Andrés Valencia (operando en memoria fallback)", err.message);
   }
   console.log("✅ Usuario de prueba 'Andrés' inyectado en InMemoryRepository");
 };
@@ -61,11 +46,11 @@ export const injectMockUser = async (clientRepository: IClientRepository, dbPool
 /**
  * Limpia el usuario de prueba de los repositorios
  */
-export const clearMockUser = async (clientRepository: IClientRepository, dbPool?: Pool) => {
-  PostgresClientRepository.inMemoryClients.delete("TEST_BOT_DEBUG");
+export const clearMockUser = async (_clientRepository: IClientRepository, dbPool?: any) => {
+  MySQLClientRepository.inMemoryClients.delete("TEST_BOT_DEBUG");
   if (dbPool) {
     try {
-      await dbPool.query("DELETE FROM clients WHERE phone_number = $1", ["TEST_BOT_DEBUG"]);
+      await dbPool.query("DELETE FROM clients WHERE phone_number = ?", ["TEST_BOT_DEBUG"]);
     } catch (e) {}
   }
   console.log("🗑️ Usuario de prueba 'TEST_BOT_DEBUG' limpiado.");

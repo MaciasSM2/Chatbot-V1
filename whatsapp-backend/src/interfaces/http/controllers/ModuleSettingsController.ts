@@ -10,7 +10,7 @@ import logger from '../../../infrastructure/logging/Logger';
 export class ModuleSettingsController {
   constructor(private readonly moduleService: ModuleSettingsService) {}
 
-  public getModules = async (req: Request, res: Response): Promise<void> => {
+  public getModules = async (_req: Request, res: Response): Promise<void> => {
     try {
       const modules = await this.moduleService.getModules();
       res.status(200).json(modules);
@@ -20,7 +20,7 @@ export class ModuleSettingsController {
     }
   };
 
-  public getAuditLogs = async (req: Request, res: Response): Promise<void> => {
+  public getAuditLogs = async (_req: Request, res: Response): Promise<void> => {
     try {
       const logs = await this.moduleService.getAuditLogs();
       res.status(200).json(logs);

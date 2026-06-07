@@ -1,28 +1,49 @@
-import { Pool } from "pg";
 import { DayType, TimePeriod } from "../entities/GreetingTemplate";
 import { HolidayManager } from "./HolidayManager";
+import { MySQLTimeRepository, TimePeriodRow } from "../../providers/database/MySQLTimeRepository";
 
 export class DateTimeManager {
+  public static forcedHour: number | null = null;
+  public static forcedDayType: DayType | undefined = undefined;
+  public static forcedTimePeriod: TimePeriod | undefined = undefined;
+  private timeRepo?: MySQLTimeRepository;
+  public activePeriods: TimePeriodRow[] = [];
+
   constructor(
     private readonly holidayManager: HolidayManager,
-    private readonly dbPool?: Pool
-  ) {}
+    private readonly dbPool?: any
+  ) {
+    if (this.dbPool) {
+      this.timeRepo = new MySQLTimeRepository(this.dbPool);
+    }
+    // Defaults en caso de que la BD falle
+    this.activePeriods = [
+      { id: 'EARLY_MORNING', label: 'Madrugada', startHour: 1, endHour: 6, color: '#6366f1' },
+      { id: 'MORNING', label: 'Mañana', startHour: 6, endHour: 12, color: '#10b981' },
+      { id: 'AFTERNOON', label: 'Tarde', startHour: 12, endHour: 19, color: '#f59e0b' },
+      { id: 'NIGHT', label: 'Noche', startHour: 19, endHour: 1, color: '#1e293b' }
+    ];
+  }
 
   public async getDayType(date: Date): Promise<DayType> {
-    // Obtenemos la fecha en formato local YYYY-MM-DD restando el offset de zona horaria
-    const offset = date.getTimezoneOffset();
-    const localDate = new Date(date.getTime() - (offset * 60 * 1000));
-    const formattedDate = localDate.toISOString().split('T')[0] || '';
+    if (DateTimeManager.forcedDayType) {
+      return DateTimeManager.forcedDayType;
+    }
+    // En modo local, Node usa el reloj de tu PC sin desfases
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const dayOfMonth = String(date.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${dayOfMonth}`;
 
-    // 1. Prioridad 1: Configuración específica en base de datos (calendar_settings)
+    // 1. Prioridad 1: Configuración específica en base de datos (configuraciones_calendario)
     if (this.dbPool) {
       try {
-        const res = await this.dbPool.query(
-          "SELECT day_type FROM calendar_settings WHERE date = $1",
+        const [rows]: any = await this.dbPool.query(
+          "SELECT tipo_dia as day_type FROM configuraciones_calendario WHERE fecha = ?",
           [formattedDate]
         );
-        if (res.rows.length > 0) {
-          return res.rows[0].day_type as DayType;
+        if (rows.length > 0) {
+          return rows[0].day_type as DayType;
         }
       } catch (err) {
         // Fallback silencioso a comportamiento por defecto en caso de error
@@ -55,11 +76,48 @@ export class DateTimeManager {
     return 'WEEKDAY';
   }
 
+  /**
+   * Carga las franjas horarias dinámicas desde la base de datos a la caché en memoria.
+   */
+  public async loadTimePeriodsConfig(): Promise<void> {
+    if (!this.timeRepo) return;
+    try {
+      const periods = await this.timeRepo.getActiveTimePeriods();
+      if (periods.length > 0) {
+        this.activePeriods = periods;
+      }
+    } catch (err) {
+      // Fallback silencioso
+    }
+  }
+
+  public async getTimePeriodsFromDb(): Promise<TimePeriodRow[]> {
+    if (!this.timeRepo) return this.activePeriods;
+    const periods = await this.timeRepo.getActiveTimePeriods();
+    return periods.length > 0 ? periods : this.activePeriods;
+  }
+
+  public async updateTimePeriodInDb(id: string, start: number, end: number): Promise<void> {
+    if (!this.timeRepo) return;
+    await this.timeRepo.updateTimePeriod(id, start, end);
+    await this.loadTimePeriodsConfig();
+  }
+
+
   public getTimePeriod(date: Date): TimePeriod {
-    const hour = date.getHours();
-    if (hour >= 6 && hour < 12) return 'MORNING';
-    if (hour >= 12 && hour < 19) return 'AFTERNOON';
-    return 'NIGHT';
+    if (DateTimeManager.forcedTimePeriod) {
+      return DateTimeManager.forcedTimePeriod;
+    }
+    const currentHour = DateTimeManager.forcedHour !== null ? DateTimeManager.forcedHour : date.getHours();
+    
+    const period = this.activePeriods.find(p => {
+      if (p.startHour > p.endHour) { // Cruza medianoche
+        return currentHour >= p.startHour || currentHour < p.endHour;
+      }
+      return currentHour >= p.startHour && currentHour < p.endHour;
+    });
+
+    return (period?.id as TimePeriod) || 'NIGHT';
   }
 
   public async isWithinWorkingHours(date: Date): Promise<boolean> {
@@ -69,9 +127,9 @@ export class DateTimeManager {
 
     if (this.dbPool) {
       try {
-        const res = await this.dbPool.query("SELECT value FROM global_settings WHERE key = 'schedule'");
-        if (res.rows.length > 0) {
-          const config = res.rows[0].value;
+        const [rows]: any = await this.dbPool.query("SELECT valor as value FROM configuraciones_globales WHERE clave = 'schedule'");
+        if (rows.length > 0) {
+          const config = rows[0].value;
           startStr = config.work_hours_start ?? startStr;
           endStr = config.work_hours_end ?? endStr;
           workingDays = config.working_days ?? workingDays;
@@ -81,7 +139,8 @@ export class DateTimeManager {
       }
     }
 
-    const dayOfWeek = date.getDay(); // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+    const dayOfWeek = date.getDay(); // 0 = Domingo, ..., 6 = Sábado
+    
     if (!workingDays.includes(dayOfWeek)) {
       return false; // No laborable
     }
@@ -93,7 +152,7 @@ export class DateTimeManager {
     const endHour = endParts[0] ?? 18;
     const endMin = endParts[1] ?? 0;
 
-    const currentHour = date.getHours();
+    const currentHour = DateTimeManager.forcedHour !== null ? DateTimeManager.forcedHour : date.getHours();
     const currentMin = date.getMinutes();
 
     const startMinutesTotal = startHour * 60 + startMin;
@@ -102,6 +161,46 @@ export class DateTimeManager {
 
     return currentMinutesTotal >= startMinutesTotal && currentMinutesTotal < endMinutesTotal;
   }
+
+  /**
+   * Obtiene la fecha y hora actual ajustada de forma nativa al huso horario de Colombia (Bogotá/Medellín).
+   */
+  public getColombiaCurrentDate(): Date {
+    const targetTimeZone = 'America/Bogota';
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: targetTimeZone,
+      year: 'numeric', month: 'numeric', day: 'numeric',
+      hour: 'numeric', minute: 'numeric', second: 'numeric',
+      hour12: false
+    });
+    
+    return new Date(formatter.format(new Date()));
+  }
+
+  /**
+   * Valida si el mensaje entrante del chat se encuentra dentro del rango operativo de la empresa.
+   * @param startHour String de hora de apertura en formato militar (Ej: "07:30")
+   * @param endHour String de hora de cierre en formato militar (Ej: "19:00")
+   * @returns Booleano indicando disponibilidad de atención directa.
+   */
+  public isWithinBusinessHours(startHour: string, endHour: string): boolean {
+    const now = this.getColombiaCurrentDate();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    // Desestructuración y parseo rápido de strings directos (Condición 3)
+    const [startH, startM] = startHour.split(':').map(Number);
+    const [endH, endM] = endHour.split(':').map(Number);
+
+    // Caída segura si el cliente final corrompió el string en la base de datos
+    if (isNaN(startH!) || isNaN(startM!) || isNaN(endH!) || isNaN(endM!)) {
+      console.error(`🚨 [DateTimeManager] Error de parsing en formato de horas: ${startHour} - ${endHour}. Forzando bypass true.`);
+      return true; 
+    }
+
+    const startMinutes = startH! * 60 + startM!;
+    const endMinutes = endH! * 60 + endM!;
+
+    // Evaluación aritmética lineal instantánea
+    return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+  }
 }
-
-

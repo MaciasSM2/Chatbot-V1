@@ -19,6 +19,7 @@ import {
   Lock
 } from 'lucide-react';
 import { useModuleStore } from '../../application/store/useModuleStore';
+import { getApiUrl, executeSecureRequest } from '../../core/apiClient';
 
 interface MetricTimelineItem {
   date: string;
@@ -49,7 +50,7 @@ interface AnalyticsData {
   };
   peakHours: MetricPeakHourItem[];
   system: {
-    postgres: string;
+    mariadb: string;
     redis: string;
     prometheus: string;
   };
@@ -73,7 +74,7 @@ export default function AdminDashboardPage() {
     loadModules();
   }, [loadModules]);
 
-  const isDashboardHomeEnabled = modules.find(m => m.id === 'dashboard_home')?.is_enabled ?? true;
+  const isDashboardHomeEnabled = modules.find((m: any) => m.id === 'dashboard_home')?.is_enabled ?? true;
 
   useEffect(() => {
     if (!isDashboardHomeEnabled) {
@@ -97,19 +98,14 @@ export default function AdminDashboardPage() {
   async function fetchAnalytics(demo: boolean, silent = false) {
     if (!silent) setIsLoading(true);
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
-      const normalizedBaseUrl = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
-      const response = await fetch(`${normalizedBaseUrl}/analytics?demo=${demo ? 'true' : 'false'}`);
-      
-      if (response.ok) {
-        const result = await response.json();
-        // Incorporar simulaciones locales adicionales si existen
+      const result: any = await executeSecureRequest(`${getApiUrl()}/analytics?demo=${demo ? 'true' : 'false'}`);
+
+      if (result) {
         if (result.demo || demo) {
           result.messages.total += simulatedInbound + simulatedOutbound;
           result.messages.bot += simulatedOutbound;
           result.messages.user += simulatedInbound;
-          
-          // Actualizar último día de la línea de tiempo
+
           if (result.messages.timeline && result.messages.timeline.length > 0) {
             const lastTimelineIndex = result.messages.timeline.length - 1;
             result.messages.timeline[lastTimelineIndex].bot += simulatedOutbound;
@@ -119,7 +115,6 @@ export default function AdminDashboardPage() {
         setData(result);
       } else {
         showToast('Error al obtener métricas reales, activando Modo Demo.', 'error');
-        // Si falla la API real, forzamos modo demo
         if (!demo) {
           setIsDemoMode(true);
         }
@@ -242,7 +237,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
         <h2 className="text-xl font-bold text-gray-700 mt-6 animate-pulse">Analizando ecosistema de tráfico...</h2>
-        <p className="text-gray-400 text-sm mt-2">Cargando métricas de Prometheus y PostgreSQL</p>
+        <p className="text-gray-400 text-sm mt-2">Cargando métricas de Prometheus y MariaDB</p>
       </div>
     );
   }
@@ -253,7 +248,7 @@ export default function AdminDashboardPage() {
     sessions: { total: 0, states: { WELCOME: 0, AWAITING_NAME: 0, AWAITING_MENU_OPTION: 0 } },
     latency: { avg: 0, min: 0, max: 0 },
     peakHours: [],
-    system: { postgres: 'disconnected', redis: 'disconnected', prometheus: 'offline' },
+    system: { mariadb: 'disconnected', redis: 'disconnected', prometheus: 'offline' },
     demo: true
   };
 
@@ -566,7 +561,7 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8 bg-gray-50/50 min-h-screen">
+    <div className="p-8 max-w-7xl mx-auto space-y-8 bg-transparent min-h-screen">
       
       {/* Toast Animado */}
       {toast && (
@@ -636,32 +631,32 @@ export default function AdminDashboardPage() {
       {/* Grid de Estado del Sistema */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        {/* PostgreSQL status */}
-        <div className="bg-white p-4 rounded-xl border border-gray-200/80 shadow-sm flex items-center justify-between">
+        {/* MariaDB status */}
+        <div className="bg-bg-panel p-4 rounded-xl border border-border-subtle shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-lg ${metrics.system.postgres === 'connected' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+            <div className={`p-2.5 rounded-lg ${metrics.system.mariadb === 'connected' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
               <Database size={18} />
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Base de Datos</p>
-              <h4 className="text-sm font-bold text-gray-800">PostgreSQL</h4>
+              <p className="text-[10px] text-text-dim font-bold uppercase tracking-wider">Base de Datos</p>
+              <h4 className="text-sm font-bold text-text-main">MariaDB</h4>
             </div>
           </div>
-          <span className={`flex items-center gap-1.5 text-xs font-black tracking-tight ${metrics.system.postgres === 'connected' ? 'text-emerald-600' : 'text-rose-600'}`}>
-            <span className={`w-2.5 h-2.5 rounded-full ${metrics.system.postgres === 'connected' ? 'bg-emerald-500 animate-ping' : 'bg-rose-500'}`}></span>
-            {metrics.system.postgres === 'connected' ? 'Online' : 'Offline'}
+          <span className={`flex items-center gap-1.5 text-xs font-black tracking-tight ${metrics.system.mariadb === 'connected' ? 'text-emerald-600' : 'text-rose-600'}`}>
+            <span className={`w-2.5 h-2.5 rounded-full ${metrics.system.mariadb === 'connected' ? 'bg-emerald-500 animate-ping' : 'bg-rose-500'}`}></span>
+            {metrics.system.mariadb === 'connected' ? 'Online' : 'Offline'}
           </span>
         </div>
-
+ 
         {/* Redis status */}
-        <div className="bg-white p-4 rounded-xl border border-gray-200/80 shadow-sm flex items-center justify-between">
+        <div className="bg-bg-panel p-4 rounded-xl border border-border-subtle shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`p-2.5 rounded-lg ${metrics.system.redis === 'connected' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
               <Cpu size={18} />
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Gestor Colas</p>
-              <h4 className="text-sm font-bold text-gray-800">Redis (BullMQ)</h4>
+              <p className="text-[10px] text-text-dim font-bold uppercase tracking-wider">Gestor Colas</p>
+              <h4 className="text-sm font-bold text-text-main">Redis (BullMQ)</h4>
             </div>
           </div>
           <span className={`flex items-center gap-1.5 text-xs font-black tracking-tight ${metrics.system.redis === 'connected' ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -669,16 +664,16 @@ export default function AdminDashboardPage() {
             {metrics.system.redis === 'connected' ? 'Online' : 'Offline'}
           </span>
         </div>
-
+ 
         {/* Prometheus status */}
-        <div className="bg-white p-4 rounded-xl border border-gray-200/80 shadow-sm flex items-center justify-between">
+        <div className="bg-bg-panel p-4 rounded-xl border border-border-subtle shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`p-2.5 rounded-lg ${metrics.system.prometheus === 'online' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
               <Activity size={18} />
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Endpoint Métricas</p>
-              <h4 className="text-sm font-bold text-gray-800">Prometheus</h4>
+              <p className="text-[10px] text-text-dim font-bold uppercase tracking-wider">Endpoint Métricas</p>
+              <h4 className="text-sm font-bold text-text-main">Prometheus</h4>
             </div>
           </div>
           <span className={`flex items-center gap-1.5 text-xs font-black tracking-tight ${metrics.system.prometheus === 'online' ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -686,20 +681,20 @@ export default function AdminDashboardPage() {
             {metrics.system.prometheus === 'online' ? 'Online' : 'Offline'}
           </span>
         </div>
-
+ 
         {/* Webhook status */}
-        <div className="bg-white p-4 rounded-xl border border-gray-200/80 shadow-sm flex items-center justify-between">
+        <div className="bg-bg-panel p-4 rounded-xl border border-border-subtle shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-lg bg-blue-50 text-blue-600">
-              {metrics.system.postgres === 'connected' && metrics.system.redis === 'connected' ? <Wifi size={18} /> : <WifiOff size={18} />}
+              {metrics.system.mariadb === 'connected' && metrics.system.redis === 'connected' ? <Wifi size={18} /> : <WifiOff size={18} />}
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Integración Nube</p>
-              <h4 className="text-sm font-bold text-gray-800">WhatsApp Webhook</h4>
+              <p className="text-[10px] text-text-dim font-bold uppercase tracking-wider">Integración Nube</p>
+              <h4 className="text-sm font-bold text-text-main">WhatsApp Webhook</h4>
             </div>
           </div>
-          <span className={`flex items-center gap-1.5 text-xs font-black tracking-tight ${metrics.system.postgres === 'connected' && metrics.system.redis === 'connected' ? 'text-blue-600' : 'text-slate-500'}`}>
-            {metrics.system.postgres === 'connected' && metrics.system.redis === 'connected' ? 'Escuchando' : 'Modo Demo'}
+          <span className={`flex items-center gap-1.5 text-xs font-black tracking-tight ${metrics.system.mariadb === 'connected' && metrics.system.redis === 'connected' ? 'text-blue-600' : 'text-slate-500'}`}>
+            {metrics.system.mariadb === 'connected' && metrics.system.redis === 'connected' ? 'Escuchando' : 'Modo Demo'}
           </span>
         </div>
 
@@ -709,12 +704,12 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
         {/* KPI 1: Total Mensajes */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+        <div className="bg-bg-panel p-6 rounded-xl border border-border-subtle shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
           <div className="flex justify-between items-start mb-4">
             <div>
-              <p className="text-xs text-gray-400 font-black uppercase tracking-wider mb-1">Total Mensajes</p>
-              <h3 className="text-3xl font-black text-gray-800 tracking-tight">{metrics.messages.total}</h3>
+              <p className="text-xs text-text-dim font-black uppercase tracking-wider mb-1">Total Mensajes</p>
+              <h3 className="text-3xl font-black text-text-main tracking-tight">{metrics.messages.total}</h3>
             </div>
             <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
               <MessageSquare size={20} />
@@ -724,17 +719,17 @@ export default function AdminDashboardPage() {
             <span className="font-bold text-blue-600 flex items-center gap-0.5">
               {metrics.messages.user} <ArrowUpRight size={12} />
             </span>
-            <span className="text-gray-400 font-medium">mensajes del usuario</span>
+            <span className="text-text-dim font-medium">mensajes del usuario</span>
           </div>
         </div>
 
         {/* KPI 2: Chats Activos */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+        <div className="bg-bg-panel p-6 rounded-xl border border-border-subtle shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
           <div className="flex justify-between items-start mb-4">
             <div>
-              <p className="text-xs text-gray-400 font-black uppercase tracking-wider mb-1">Sesiones Activas</p>
-              <h3 className="text-3xl font-black text-gray-800 tracking-tight">{metrics.sessions.total}</h3>
+              <p className="text-xs text-text-dim font-black uppercase tracking-wider mb-1">Sesiones Activas</p>
+              <h3 className="text-3xl font-black text-text-main tracking-tight">{metrics.sessions.total}</h3>
             </div>
             <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center">
               <Users size={20} />
@@ -744,35 +739,35 @@ export default function AdminDashboardPage() {
             <span className="font-bold text-emerald-600 flex items-center gap-0.5">
               100%
             </span>
-            <span className="text-gray-400 font-medium">flujo activo FSM</span>
+            <span className="text-text-dim font-medium">flujo activo FSM</span>
           </div>
         </div>
 
         {/* KPI 3: Latencia Promedio */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+        <div className="bg-bg-panel p-6 rounded-xl border border-border-subtle shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500"></div>
           <div className="flex justify-between items-start mb-4">
             <div>
-              <p className="text-xs text-gray-400 font-black uppercase tracking-wider mb-1">Latencia Promedio</p>
-              <h3 className="text-3xl font-black text-gray-800 tracking-tight">{(metrics.latency.avg * 1000).toFixed(0)}<span className="text-lg font-bold text-gray-400">ms</span></h3>
+              <p className="text-xs text-text-dim font-black uppercase tracking-wider mb-1">Latencia Promedio</p>
+              <h3 className="text-3xl font-black text-text-main tracking-tight">{(metrics.latency.avg * 1000).toFixed(0)}<span className="text-lg font-bold text-text-dim">ms</span></h3>
             </div>
             <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center">
               <Zap size={20} />
             </div>
           </div>
-          <div className="flex items-center justify-between text-xs text-gray-400 font-semibold font-mono">
+          <div className="flex items-center justify-between text-xs text-text-dim font-semibold font-mono">
             <span>Min: {(metrics.latency.min * 1000).toFixed(0)}ms</span>
             <span>Max: {(metrics.latency.max * 1000).toFixed(0)}ms</span>
           </div>
         </div>
 
         {/* KPI 4: Automatización Bot */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+        <div className="bg-bg-panel p-6 rounded-xl border border-border-subtle shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-purple-500"></div>
           <div className="flex justify-between items-start mb-4">
             <div>
-              <p className="text-xs text-gray-400 font-black uppercase tracking-wider mb-1">Automatización</p>
-              <h3 className="text-3xl font-black text-gray-800 tracking-tight">{botSuccessRate}%</h3>
+              <p className="text-xs text-text-dim font-black uppercase tracking-wider mb-1">Automatización</p>
+              <h3 className="text-3xl font-black text-text-main tracking-tight">{botSuccessRate}%</h3>
             </div>
             <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center">
               <TrendingUp size={20} />
@@ -782,7 +777,7 @@ export default function AdminDashboardPage() {
             <span className="font-bold text-purple-600 flex items-center gap-0.5">
               {metrics.messages.bot} <ArrowUpRight size={12} />
             </span>
-            <span className="text-gray-400 font-medium">mensajes enviados por el bot</span>
+            <span className="text-text-dim font-medium">mensajes enviados por el bot</span>
           </div>
         </div>
 
@@ -792,80 +787,80 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Gráfico 1: Tráfico últimos 7 días */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-sm lg:col-span-2 flex flex-col justify-between">
+        <div className="bg-bg-panel p-6 rounded-xl border border-border-subtle shadow-sm lg:col-span-2 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-black text-gray-800 tracking-tight">Volumen de Mensajes (7 Días)</h3>
-              <p className="text-xs text-gray-400 font-medium mt-0.5">Relación diaria entre interacciones de clientes y respuestas del bot</p>
+              <h3 className="text-lg font-black text-text-main tracking-tight">Volumen de Mensajes (7 Días)</h3>
+              <p className="text-xs text-text-dim font-medium mt-0.5">Relación diaria entre interacciones de clientes y respuestas del bot</p>
             </div>
             
             <div className="flex items-center gap-4 text-xs font-bold">
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-                <span className="text-gray-500">Usuario</span>
+                <span className="text-text-dim">Usuario</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                <span className="text-gray-500">Bot</span>
+                <span className="text-text-dim">Bot</span>
               </div>
             </div>
           </div>
-
+ 
           <div className="flex-1 flex items-center justify-center p-2">
             {renderTimelineChart()}
           </div>
         </div>
-
+ 
         {/* Gráfico 2: Estados FSM */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-sm flex flex-col justify-between">
+        <div className="bg-bg-panel p-6 rounded-xl border border-border-subtle shadow-sm flex flex-col justify-between">
           <div>
-            <h3 className="text-lg font-black text-gray-800 tracking-tight">Embudo FSM de Clientes</h3>
-            <p className="text-xs text-gray-400 font-medium mt-0.5">Distribución del estado activo de los números de chat</p>
+            <h3 className="text-lg font-black text-text-main tracking-tight">Embudo FSM de Clientes</h3>
+            <p className="text-xs text-text-dim font-medium mt-0.5">Distribución del estado activo de los números de chat</p>
           </div>
-
+ 
           <div className="flex-1 flex items-center justify-center my-6">
             {renderDonutChart()}
           </div>
-
-          <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg flex items-start gap-2.5 text-xs text-slate-500 font-medium">
+ 
+          <div className="p-3 bg-bg-main border border-border-subtle rounded-lg flex items-start gap-2.5 text-xs text-text-dim font-medium">
             <HelpCircle size={16} className="text-blue-500 shrink-0 mt-0.5" />
             <p className="leading-snug">
               Este embudo monitorea cuántos clientes están interactuando activamente con las estrategias secuenciales de saludo y captura.
             </p>
           </div>
         </div>
-
+ 
       </div>
-
+ 
       {/* Fila inferior: Picos de hora & simulador de tráfico */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Gráfico 3: Picos de tráfico por hora */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-sm lg:col-span-2 flex flex-col justify-between">
+        <div className="bg-bg-panel p-6 rounded-xl border border-border-subtle shadow-sm lg:col-span-2 flex flex-col justify-between">
           <div>
-            <h3 className="text-lg font-black text-gray-800 tracking-tight">Distribución Horaria de Tráfico</h3>
-            <p className="text-xs text-gray-400 font-medium mt-0.5">Historial acumulado de mensajes por franja de 24 horas</p>
+            <h3 className="text-lg font-black text-text-main tracking-tight">Distribución Horaria de Tráfico</h3>
+            <p className="text-xs text-text-dim font-medium mt-0.5">Historial acumulado de mensajes por franja de 24 horas</p>
           </div>
-
+ 
           <div className="flex-1 flex items-center justify-center py-4">
             {renderPeakHoursChart()}
           </div>
         </div>
 
         {/* Simulador Interactivo Local */}
-        <div className="bg-gradient-to-br from-slate-50 to-blue-50/20 p-6 rounded-xl border border-blue-200/60 shadow-sm flex flex-col justify-between relative overflow-hidden">
+        <div className="bg-gradient-to-br from-bg-panel to-bg-main/50 p-6 rounded-xl border border-border-subtle shadow-sm flex flex-col justify-between relative overflow-hidden">
           <div className="absolute right-0 bottom-0 -mb-6 -mr-6 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl pointer-events-none"></div>
-
+ 
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="text-blue-600" size={16} />
-              <h3 className="text-lg font-black text-slate-800 tracking-tight">Simulador de Tráfico</h3>
+              <h3 className="text-lg font-black text-text-main tracking-tight">Simulador de Tráfico</h3>
             </div>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6">
+            <p className="text-xs text-text-dim font-medium leading-relaxed mb-6">
               Haz clic en los botones para disparar mensajes interactivos y ver cómo se actualizan y escalan las gráficas en tiempo real de forma dinámica.
             </p>
           </div>
-
+ 
           <div className="space-y-4 relative z-10">
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -883,11 +878,11 @@ export default function AdminDashboardPage() {
                 Outbound Bot
               </button>
             </div>
-
+ 
             <button
               onClick={handleResetSimulation}
               disabled={simulatedInbound === 0 && simulatedOutbound === 0}
-              className="w-full py-2 border border-slate-200 hover:border-slate-300 rounded-lg text-slate-600 font-bold text-xs bg-white hover:bg-slate-50 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
+              className="w-full py-2 border border-border-subtle hover:border-text-dim rounded-lg text-text-dim font-bold text-xs bg-bg-panel hover:bg-bg-main transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
             >
               Restablecer Simulación Local
             </button>

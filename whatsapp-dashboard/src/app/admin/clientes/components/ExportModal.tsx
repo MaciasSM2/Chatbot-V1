@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file ExportModal.tsx
  * @description Interfaz para configurar la exportación con filtros avanzados.

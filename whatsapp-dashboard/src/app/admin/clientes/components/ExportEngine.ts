@@ -6,22 +6,24 @@
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useFieldStore } from '../../../../application/store/useFieldStore';
 
 export const ExportEngine = {
   /**
    * Aplana los metadatos JSONB para que sean columnas legibles.
    */
-  flattenClients(clients: any[], customFields: any[]) {
+  flattenClients(clients: any[], customFields?: any[]) {
+    const fields = customFields || useFieldStore.getState().customFields;
     return clients.map(client => {
       const flatClient: any = {
-        'Teléfono': client.phoneNumber,
-        'Nombre': client.name || 'Sin registro',
-        'Estado': client.isRegistered ? 'Recurrente' : 'Nuevo',
-        'Fecha Registro': new Date(client.createdAt).toLocaleDateString('es-CO')
+        'Teléfono': client.phone_number || client.phoneNumber,
+        'Nombre': client.full_name || client.name || 'Sin registro',
+        'Estado': (client.is_registered !== undefined ? client.is_registered : client.isRegistered) ? 'Recurrente' : 'Nuevo',
+        'Fecha Registro': (client.created_at || client.createdAt) ? new Date(client.created_at || client.createdAt).toLocaleDateString('es-CO') : '-'
       };
 
       // Inyectar dinámicamente los campos JSONB
-      customFields.forEach(field => {
+      fields.forEach(field => {
         flatClient[field.label] = client.metadata?.[field.id] || '-';
       });
 
@@ -30,8 +32,9 @@ export const ExportEngine = {
   },
 
   /** Exporta a Excel (.xlsx) */
-  toExcel(clients: any[], customFields: any[]) {
-    const data = this.flattenClients(clients, customFields);
+  toExcel(clients: any[], customFields?: any[]) {
+    const fields = customFields || useFieldStore.getState().customFields;
+    const data = this.flattenClients(clients, fields);
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Clientes_WhatsApp");
@@ -39,9 +42,10 @@ export const ExportEngine = {
   },
 
   /** Exporta a PDF profesional */
-  toPDF(clients: any[], customFields: any[]) {
+  toPDF(clients: any[], customFields?: any[]) {
+    const fields = customFields || useFieldStore.getState().customFields;
     const doc = new jsPDF();
-    const data = this.flattenClients(clients, customFields);
+    const data = this.flattenClients(clients, fields);
     
     // Título y Estilo
     doc.setFontSize(18);

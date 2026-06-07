@@ -3,6 +3,28 @@ import { IGreetingRepository } from "../../core/interfaces/repositories/IGreetin
 
 export class InMemoryGreetingRepository implements IGreetingRepository {
   private templates: GreetingTemplate[] = [
+    // Plantillas de MADRUGADA
+    new GreetingTemplate(
+      't_dawn_1',
+      'WEEKDAY',
+      'EARLY_MORNING',
+      '¡Hola{{name}}! 🌙 Te escribe el equipo de atención. En este momento estamos descansando, pero recibimos tu mensaje. Nuestra jornada inicia a las *6:00 a.m.* y serás nuestra prioridad. ¡Gracias por tu paciencia!',
+      'RESPONSE'
+    ),
+    new GreetingTemplate(
+      't_dawn_new',
+      'WEEKDAY',
+      'EARLY_MORNING',
+      '¡Muy pronto estaremos contigo! 👋 Notamos que eres nuevo. Déjanos tu nombre y cédula; a partir de las *6:00 a.m.* procesaremos tu registro de inmediato.',
+      'INITIATION'
+    ),
+    new GreetingTemplate(
+      't_dawn_cont',
+      'WEEKDAY',
+      'EARLY_MORNING',
+      '¡Seguimos por aquí{{name}}! 🌙 Nuestro turno oficial comienza a las *6:00 a.m.* y serás de los primeros en ser atendido. ¡Agradecemos tu espera!',
+      'CONTINUITY'
+    ),
     // Plantillas de RESPUESTA (Premium)
     new GreetingTemplate(
       't1',

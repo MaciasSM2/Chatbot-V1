@@ -1,31 +1,42 @@
-# Stage 1: Build Next.js application
-FROM node:20-alpine AS builder
-WORKDIR /app
+# ──────────────────────────────────────────────────────────────
+# STAGE 1: COMPILADOR DE COMPONENTES NEXT.JS (BUILDER)
+# ──────────────────────────────────────────────────────────────
+FROM node:20-alpine AS dashboard-compiler
+
+WORKDIR /usr/src/app
 
 COPY package*.json ./
-RUN npm ci
+COPY whatsapp-dashboard/package*.json ./whatsapp-dashboard/
 
-COPY . .
+RUN npm ci --workspace=whatsapp-dashboard
 
-# Set dynamic API URL argument during build
-ARG NEXT_PUBLIC_API_URL=http://localhost:3000/api
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+COPY whatsapp-dashboard/ ./whatsapp-dashboard/
 
+WORKDIR /usr/src/app/whatsapp-dashboard
+
+# Inyectar bandera mandatoria para compilar bajo el esquema optimizado standalone de Next.js
+ENV NEXT_PRIVATE_STANDALONE=true
 RUN npm run build
 
-# Stage 2: Runtime image
-FROM node:20-alpine AS runner
+# ──────────────────────────────────────────────────────────────
+# STAGE 2: ENTORNO DE EJECUCIÓN MINIMALISTA DE PRODUCCIÓN (RUNNER)
+# ──────────────────────────────────────────────────────────────
+FROM node:20-alpine AS dashboard-production-runner
+
 WORKDIR /app
+
 ENV NODE_ENV=production
+ENV PORT=3001
+ENV NEXT_TELEMETRY_DISABLED=1
 
-COPY package*.json ./
-RUN npm ci --omit=dev
+# Traspasar los artefactos standalone optimizados generados en el builder
+COPY --from=dashboard-compiler /usr/src/app/whatsapp-dashboard/.next/standalone ./
+COPY --from=dashboard-compiler /usr/src/app/whatsapp-dashboard/.next/static ./.next/static
+COPY --from=dashboard-compiler /usr/src/app/whatsapp-dashboard/public ./public
 
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.mjs ./next.config.mjs
+USER node
 
 EXPOSE 3001
-ENV PORT=3001
 
-CMD ["npx", "next", "start", "-p", "3001"]
+# Arrancar Next.js utilizando el mini-servidor optimizado de producción compilado por el framework
+CMD ["node", "server.js"]

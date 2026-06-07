@@ -5,12 +5,16 @@
 
 import { useEffect } from 'react';
 import { io } from 'socket.io-client';
+import { getApiUrl } from '../../core/apiClient';
 
 export const useSocketEvents = (chatId: string | null, onNewMessage: (msg: any) => void) => {
   useEffect(() => {
     if (!chatId) return;
 
-    const socket = io(process.env.NEXT_PUBLIC_API_URL_BASE || "http://localhost:3000");
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_session_token') : null;
+    const socket = io(getApiUrl(), {
+      query: token ? { token } : undefined
+    });
     
     socket.emit("join", chatId);
     

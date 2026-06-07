@@ -2,61 +2,133 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-@layer base {
-  :root {
-    --bg-main: #f0f2f5;
-    --bg-panel: #ffffff;
-    --bg-header: #f0f2f5;
-    --bg-input: #ffffff;
-    --bg-raised: #f7f8fa;
-    --bg-welcome: #efeae2;
+:root {
+  /* Fallbacks de Seguridad Iniciales (Verde Whatsapp predeterminado) */
+  --theme-bg-base: #F4F9F5;
+  --theme-bg-gradient-end: #FFFFFF;
+  --theme-accent: #25D366;
+  --theme-bubble-user: #E2F4C5;
+  --theme-bubble-bot: #FFFFFF;
 
-    --text-primary: #111b21;
-    --text-secondary: #667781;
-    --text-inverse: #ffffff;
+  /* MODO LUMINOSO (Light Mode) */
+  --bg-main: var(--theme-bg-base);           /* Gris pizarra muy tenue / Base dinámica */
+  --bg-panel: #ffffff;          /* Blanco puro */
+  --bg-header: #f1f5f9;
+  --bg-input: #ffffff;
+  
+  --text-main: #0f172a;         /* Azul muy oscuro para lectura */
+  --text-dim: #64748b;          /* Gris para descripciones */
+  --border-color: rgba(15, 23, 42, 0.15); /* Gris zinc — más visible */
+  --separator-accent: #e2e8f0;
+  
+  /* Separadores de Alta Visibilidad (Light Mode) */
+  --border-subtle: rgba(20, 22, 23, 0.06);
+  --border-strong: rgba(20, 22, 23, 0.15);
+  
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
 
-    --bubble-bot: #ffffff;
-    --bubble-user: #dcf8c6;
-    --bubble-border: rgba(0, 0, 0, 0.05);
+  /* Compatibilidad con variables previas */
+  --bg-raised: #f7f8fa;
+  --bg-welcome: #efeae2;
+  --bubble-bot: var(--theme-bubble-bot);
+  --bubble-user: var(--theme-bubble-user);
+  --bubble-border: rgba(0, 0, 0, 0.05);
+  --brand-green: var(--theme-accent);
+  --brand-green-hover: color-mix(in srgb, var(--theme-accent) 85%, #000000);
+  --accent-amber: #ffbc2e;
+  --status-error: #f15f5f;
 
-    --brand-green: #00a884;
-    --brand-green-hover: #06cf9c;
-    --accent-amber: #ffbc2e;
-    --status-error: #f15f5f;
-  }
-
-  .dark {
-    --bg-main: #0b141a;
-    --bg-panel: #111b21;
-    --bg-header: #202c33;
-    --bg-input: #2a3942;
-    --bg-raised: #182229;
-    --bg-welcome: #0b141a;
-
-    --text-primary: #e9edef;
-    --text-secondary: #8696a0;
-    --text-inverse: #111b21;
-
-    --bubble-bot: #202c33;
-    --bubble-user: #005c4b;
-    --bubble-border: rgba(255, 255, 255, 0.05);
-
-    --brand-green: #00a884;
-    --brand-green-hover: #06cf9c;
-    --accent-amber: #ffbc2e;
-    --status-error: #f15f5f;
-  }
+  --brand-primary: var(--theme-accent);
+  --brand-accent: #e2e8f0;
 }
 
-@theme inline {
+.dark {
+  /* Fallbacks de Seguridad para Modalidad Oscura (Noche Estrellada) */
+  --theme-bg-base: #070A0E;
+  --theme-bg-gradient-end: #0A2315;
+  --theme-accent: #25D366;
+  --theme-bubble-user: #0A371B;
+  --theme-bubble-bot: #141617;
+
+  /* Fondo Maestro: Negro absoluto / Base dinámica */
+  --bg-main: var(--theme-bg-base); 
+  
+  /* Paneles: Gris carbón muy oscuro */
+  --bg-panel: #0d0d0d; 
+  
+  /* Celdas, Headers e Inputs: Gris profundo */
+  --bg-header: #141517;
+  --bg-input: #18191b;
+  
+  /* Textos: Blanco humo y gris suave */
+  --text-main: #f1f5f9;
+  --text-dim: #88929b;
+  
+  /* Bordes: Toque esmeralda para coherencia con identidad del bot */
+  --border-color: rgba(16, 185, 129, 0.12);
+  --separator-accent: #1e293b;
+  
+  /* Separadores de Alta Visibilidad (Dark Mode) */
+  --border-subtle: rgba(255, 255, 255, 0.05); 
+  --border-strong: rgba(255, 255, 255, 0.15); 
+  
+  /* Compatibilidad con variables previas */
+  --bg-raised: #182229;
+  --bg-welcome: #050505;
+  --bubble-bot: var(--theme-bubble-bot);
+  --bubble-user: var(--theme-bubble-user);
+  --bubble-border: rgba(255, 255, 255, 0.05);
+  --brand-green: var(--theme-accent);
+  --brand-green-hover: color-mix(in srgb, var(--theme-accent) 85%, #ffffff);
+  --accent-amber: #ffbc2e;
+  --status-error: #f15f5f;
+
+  /* Acento WhatsApp */
+  --brand-primary: var(--theme-accent);
+  --brand-accent: #1e293b; /* Azul profundo para detalles de selección */
+}
+
+@theme {
+  --color-brand-primary: #10b981; /* Verde Esmeralda */
+  --color-brand-blue: #1e293b;    /* Azul profundo para selección */
+
+  /* Colores de Marca (Acentos) */
+  --color-primary: var(--brand-primary);
+  --color-primary-hover: #059669;
+  --color-accent: var(--brand-accent);
+
+  /* Acentos de Marca Unificados (Simulador + Admin) */
+  --color-brand-hover: #059669;
+  --color-brand-accent: var(--brand-accent);
+  
+  /* Mapeo de Variables de Tema */
+  --color-bg-main: var(--bg-main);
+  --color-bg-panel: var(--bg-panel);
+  --color-bg-header: var(--bg-header);
+  --color-bg-input: var(--bg-input);
+
+  /* Mapeo de Variables Semánticas Dinámicas */
+  --color-background-main: var(--bg-main);
+  --color-background-panel: var(--bg-panel);
+  --color-background-input: var(--bg-input);
+  --color-background-header: var(--bg-header);
+  
+  --color-text-main: var(--text-main);
+  --color-text-dim: var(--text-dim);
+  --color-text-muted: var(--text-dim);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+
+  /* Mapeo de compatibilidad con variables previas */
   --color-surface-main: var(--bg-main);
   --color-surface-panel: var(--bg-panel);
   --color-surface-header: var(--bg-header);
   --color-surface-input: var(--bg-input);
   --color-surface-raised: var(--bg-raised);
-  --color-content-primary: var(--text-primary);
-  --color-content-secondary: var(--text-secondary);
-  --color-content-inverse: var(--text-inverse);
+  --color-content-primary: var(--text-main);
+  --color-content-secondary: var(--text-dim);
+  --color-content-inverse: var(--bg-panel);
   --color-bubble-bot: var(--bubble-bot);
   --color-bubble-user: var(--bubble-user);
   --color-bubble-border: var(--bubble-border);
@@ -65,6 +137,32 @@
   --color-accent-amber: var(--accent-amber);
   --color-status-error: var(--status-error);
   --color-bg-welcome: var(--bg-welcome);
+  
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: 'Inter', system-ui, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Scrollbars estilo Cyberpunk */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-main); }
+::-webkit-scrollbar-thumb { 
+  background: #222; 
+  border-radius: 10px; 
+  
+}
+::-webkit-scrollbar-thumb:hover { background: var(--brand-primary); }
+
+/* Separadores horizontales */
+hr {
+  border: 0;
+  height: 1px;
+  background-color: var(--border-subtle);
+  margin: 1.5rem 0;
 }

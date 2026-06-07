@@ -348,7 +348,7 @@ export function ClientTable({
         <span>
           Mostrando {clients.length} de {totalClients} clientes en total
         </span>
-        <span>Conexión PostgreSQL real</span>
+        <span>Conexión MariaDB real</span>
       </div>
     </div>
   );

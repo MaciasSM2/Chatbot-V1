@@ -20,6 +20,7 @@ export const ChatHeader = ({
   isTyping,
   messages = [],
   activeScenario = {},
+  companyLogoUrl,
   children
 }) => {
   const { isDark, setIsDark } = useTheme();
@@ -42,8 +43,12 @@ export const ChatHeader = ({
       
       {/* Datos del Cliente */}
       <div className="flex items-center gap-3">
-        <div className="relative w-10 h-10 bg-slate-600 rounded-full flex items-center justify-center font-bold text-white uppercase shrink-0">
-          {clientName.substring(0, 2)}
+        <div className="relative w-10 h-10 bg-slate-600 rounded-full flex items-center justify-center font-bold text-white uppercase shrink-0 overflow-hidden">
+          {companyLogoUrl ? (
+            <img src={companyLogoUrl} alt={clientName} className="w-full h-full object-cover" />
+          ) : (
+            clientName.substring(0, 2)
+          )}
           {isOnline && (
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-surface-header rounded-full animate-pulse" />
           )}
@@ -51,7 +56,7 @@ export const ChatHeader = ({
         <div className="min-w-0">
           <h2 className="text-sm font-bold text-content-primary flex items-center gap-1.5 leading-tight truncate max-w-[150px] md:max-w-[200px]">
             {clientName}
-            <span title="Cliente validado en PostgreSQL" className="text-emerald-500">
+            <span title="Cliente validado en MariaDB" className="text-emerald-500">
               <ShieldCheck size={14} />
             </span>
           </h2>

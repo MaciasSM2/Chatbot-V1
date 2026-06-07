@@ -18,7 +18,7 @@ export class MockWhatsAppGateway implements IWhatsAppGateway {
     this.currentScenario = scenario;
   }
 
-  public async sendMessage(to: string, text: string): Promise<IWhatsAppResponse> {
+  public async sendMessage(_to: string, _text: string): Promise<IWhatsAppResponse> {
     // Simulación de la latencia mínima inherente a una petición HTTP de red
     await new Promise(resolve => setTimeout(resolve, 600));
 

@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
 import { IMessageRepository } from "../../core/interfaces/repositories/IMessageRepository";
 import { ISessionRepository } from "../../core/interfaces/repositories/ISessionRepository";
-import { Pool } from "pg";
 import logger from "../../infrastructure/logging/Logger";
-import { PostgresClientRepository } from "../../providers/database/PostgresClientRepository";
+import { MySQLClientRepository } from "../../providers/database/MySQLClientRepository";
 import { ChatSession } from "../../core/entities/ChatSession";
 import { TaskOrchestrator } from "../../core/services/TaskOrchestrator";
 
@@ -11,31 +10,41 @@ export class ChatController {
   constructor(
     private readonly messageRepository: IMessageRepository,
     private readonly sessionRepository: ISessionRepository,
-    private readonly dbPool: Pool
+    private readonly dbPool: any
   ) {}
 
-  public async getActiveChats(req: Request, res: Response): Promise<void> {
+  public async getActiveChats(_req: Request, res: Response): Promise<void> {
     try {
       const query = `
         SELECT 
-          m.user_id as "userId", 
-          c.name as "clientName", 
-          c.is_registered as "isRegistered",
-          MAX(m.timestamp) as "lastMessageTime",
-          (SELECT text FROM messages WHERE user_id = m.user_id ORDER BY timestamp DESC LIMIT 1) as "lastMessageText",
-          COALESCE((SELECT (metadata->>'isPaused')::boolean FROM chat_sessions WHERE user_id = m.user_id), false) as "isPaused",
-          (SELECT current_step FROM chat_sessions WHERE user_id = m.user_id) as "currentStep",
-          (SELECT metadata FROM chat_sessions WHERE user_id = m.user_id) as "metadata"
-        FROM messages m 
-        LEFT JOIN clients c ON m.user_id = c.phone_number 
-        GROUP BY m.user_id, c.name, c.is_registered
-        ORDER BY "lastMessageTime" DESC
+          m.usuario_id as userId, 
+          c.full_name as clientName, 
+          c.is_registered as isRegistered,
+          MAX(m.marca_tiempo) as lastMessageTime,
+          (SELECT texto FROM mensajes WHERE usuario_id = m.usuario_id ORDER BY marca_tiempo DESC LIMIT 1) as lastMessageText,
+          COALESCE(c.is_paused, 0) as isPaused,
+          (SELECT paso_actual FROM sesiones_chat WHERE usuario_id = m.usuario_id) as currentStep,
+          (SELECT metadatos FROM sesiones_chat WHERE usuario_id = m.usuario_id) as metadata
+        FROM mensajes m 
+        LEFT JOIN clients c ON m.usuario_id = c.phone_number 
+        GROUP BY m.usuario_id, c.full_name, c.is_registered, c.is_paused
+        ORDER BY lastMessageTime DESC
       `;
-      const result = await this.dbPool.query(query);
-      const rowsWithEvents = result.rows.map(row => {
-        const rowMetadata = row.metadata || {};
+      const [rows]: any = await this.dbPool.query(query);
+      const rowsWithEvents = rows.map((row: any) => {
+        // En MySQL, los tipos booleanos de isRegistered/isPaused pueden venir como 1 o 0, o true/false
+        const isRegistered = row.isRegistered === 1 || row.isRegistered === true || row.isRegistered === 'true';
+        const isPaused = row.isPaused === 1 || row.isPaused === true || row.isPaused === 'true';
+        const rowMetadata = typeof row.metadata === 'string' ? JSON.parse(row.metadata) : (row.metadata || {});
+
         return {
-          ...row,
+          userId: row.userId,
+          clientName: row.clientName,
+          isRegistered: isRegistered,
+          lastMessageTime: row.lastMessageTime,
+          lastMessageText: row.lastMessageText,
+          isPaused: isPaused,
+          currentStep: row.currentStep,
           metadata: {
             ...rowMetadata,
             events: TaskOrchestrator.getInstance().getEvents(row.userId)
@@ -44,7 +53,7 @@ export class ChatController {
       });
       res.status(200).json(rowsWithEvents);
     } catch (error) {
-      logger.warn("[Chat] getActiveChats falló en Postgres, usando fallback de memoria", { error: error instanceof Error ? error.message : String(error) });
+      logger.warn("[Chat] getActiveChats falló en MySQL, usando fallback de memoria", { error: error instanceof Error ? error.message : String(error) });
       
       try {
         const allMsgs = await this.messageRepository.findAll();
@@ -64,7 +73,7 @@ export class ChatController {
         const activeChats = [];
         for (const [userId, info] of userGroups.entries()) {
           // Buscar información del cliente en el repositorio de fallback
-          const client = PostgresClientRepository.inMemoryClients.get(userId);
+          const client = MySQLClientRepository.inMemoryClients.get(userId);
           const session = await this.sessionRepository.findByUserId(userId);
           activeChats.push({
             userId,
@@ -173,6 +182,14 @@ export class ChatController {
       }
       session.pauseBot();
       await this.sessionRepository.save(session);
+
+      // Persistir is_paused en la base de datos relacional para homologación completa
+      try {
+        await this.dbPool.query('UPDATE clients SET is_paused = 1 WHERE phone_number = ?', [userId]);
+      } catch (dbErr) {
+        logger.warn(`[ChatController] No se pudo persistir is_paused en clients: ${(dbErr as Error).message}`);
+      }
+
       logger.info(`[ChatController] Bot pausado para el usuario ${userId}`);
       res.status(200).json({ isPaused: true });
     } catch (error) {
@@ -193,6 +210,14 @@ export class ChatController {
         session.resumeBot();
         await this.sessionRepository.save(session);
       }
+
+      // Persistir is_paused = 0 en la base de datos relacional para homologación completa
+      try {
+        await this.dbPool.query('UPDATE clients SET is_paused = 0 WHERE phone_number = ?', [userId]);
+      } catch (dbErr) {
+        logger.warn(`[ChatController] No se pudo persistir is_paused en clients: ${(dbErr as Error).message}`);
+      }
+
       logger.info(`[ChatController] Bot reactivado para el usuario ${userId}`);
       res.status(200).json({ isPaused: false });
     } catch (error) {
@@ -200,4 +225,50 @@ export class ChatController {
       res.status(500).json({ error: "No se pudo reactivar el bot" });
     }
   }
+
+  /**
+   * POST /api/chat/toggle-pause
+   * Altera el estado del flag de automatización en MariaDB y propaga el cambio por WebSockets.
+   */
+  public toggleBotAutomation = async (req: Request, res: Response): Promise<void> => {
+    const { phone_number, is_paused } = req.body;
+    const operatorId = (req as any).adminContext?.operatorId || 'SYSTEM';
+
+    if (!phone_number || is_paused === undefined) {
+      res.status(400).json({ success: false, error: 'Número de teléfono y flag is_paused mandatorios.' });
+      return;
+    }
+
+    const numericPauseFlag = is_paused ? 1 : 0;
+
+    try {
+      // 1. Ejecutar la mutación atómica en MariaDB sobre la tabla unificada de clientes
+      const [_result] = await this.dbPool.query(
+        `UPDATE clients SET is_paused = ? WHERE phone_number = ?`,
+        [numericPauseFlag, phone_number]
+      );
+
+      // Mutar la sesión de la FSM también para mantener la consistencia híbrida
+      let session = await this.sessionRepository.findByUserId(phone_number);
+      if (session) {
+        if (numericPauseFlag === 1) {
+          session.pauseBot();
+        } else {
+          session.resumeBot();
+        }
+        await this.sessionRepository.save(session);
+      }
+
+      logger.info(`🔄 [Agent Interception] Operador ${operatorId} cambió automatización para ${phone_number} a: ${numericPauseFlag}`);
+
+      res.status(200).json({
+        success: true,
+        message: numericPauseFlag === 1 ? 'Bot pausado. Control transferido al asesor humano.' : 'Bot reanudado con éxito.'
+      });
+
+    } catch (error: any) {
+      logger.error('🚨 [ChatController Collapse] Falló la conmutación del estado del bot:', error);
+      res.status(500).json({ success: false, error: 'Fallo interno modificando la compuerta de automatización.' });
+    }
+  };
 }

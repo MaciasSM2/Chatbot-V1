@@ -125,6 +125,7 @@ export const ConversationSetupModal = ({ onStart, onClose }) => {
                 <option value="MORNING">Mañana</option>
                 <option value="AFTERNOON">Tarde</option>
                 <option value="NIGHT">Noche</option>
+                <option value="EARLY_MORNING">Madrugada (1am - 6am)</option>
               </select>
             </div>
           </div>

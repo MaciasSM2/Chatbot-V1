@@ -38,7 +38,7 @@ export class ClientController {
     private readonly sessionRepository: ISessionRepository
   ) {}
 
-  public async getClients(req: Request, res: Response): Promise<void> {
+  public async getClients(_req: Request, res: Response): Promise<void> {
     try {
       const clients = await this.clientRepository.findAll();
       

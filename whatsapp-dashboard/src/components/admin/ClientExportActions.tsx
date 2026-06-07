@@ -46,17 +46,17 @@ export function ClientExportActions({ clients }: ClientExportActionsProps) {
         <button 
           onClick={downloadTemplate}
           type="button"
-          className="flex items-center justify-center gap-2 bg-white border border-gray-300 hover:border-gray-400 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+          className="flex items-center justify-center gap-2 bg-background-header border border-border-subtle hover:bg-background-panel text-text-main px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
           title="Descargar plantilla Excel limpia"
         >
-          <FileSpreadsheet size={16} className="text-blue-600 animate-pulse" />
+          <FileSpreadsheet size={16} className="text-brand-primary animate-pulse" />
           <span>Plantilla Excel</span>
         </button>
 
         <button 
           onClick={() => setIsModalOpen(true)}
           type="button"
-          className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md active:scale-95 cursor-pointer border border-slate-700/30"
+          className="flex items-center justify-center gap-2 bg-background-header border border-border-subtle hover:bg-background-panel text-text-main px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md active:scale-95 cursor-pointer"
           title="Exportar base de datos avanzada"
         >
           <Download size={16} />

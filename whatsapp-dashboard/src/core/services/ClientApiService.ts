@@ -1,3 +1,6 @@
+import { getApiUrl, executeSecureRequest } from "../apiClient";
+import { IClientCrmEntity, CrmApiResponse } from '../interfaces/CrmNetworkContracts';
+
 export interface IClient {
   id: string;
   phoneNumber: string;
@@ -10,15 +13,32 @@ export interface IClient {
 export class ClientApiService {
   private readonly baseUrl: string;
 
-  constructor(baseUrl: string = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api') {
-    this.baseUrl = `${baseUrl}/clients`;
+  constructor(baseUrl?: string) {
+    this.baseUrl = `${baseUrl || getApiUrl()}/admin/crm/clients`;
+  }
+
+  /**
+   * Obtiene la colección completa de prospectos desde la central relacional de datos.
+   */
+  public async fetchAllProspects(): Promise<IClientCrmEntity[]> {
+    try {
+      // Consumir el cliente unificado inyectando los contratos de dominio estrictos
+      const response: CrmApiResponse<IClientCrmEntity[]> = await executeSecureRequest(this.baseUrl);
+      
+      if (response.success && response.data) {
+        return response.data;
+      }
+      
+      return [];
+    } catch (networkException) {
+      console.error('❌ [ClientApiService Strict Error] Falló la descarga del CRM:', networkException);
+      throw networkException; // Lanza la excepción tipada para que la capture el Toast Notification Provider
+    }
   }
 
   public async getClients(): Promise<IClient[]> {
-    const response = await fetch(this.baseUrl);
-    if (!response.ok) throw new Error('Error al obtener la lista de clientes');
-    const data = await response.json();
-    return data.map((item: any) => ({
+    const result: any = await executeSecureRequest(this.baseUrl);
+    return (result.data || result).map((item: any) => ({
       id: item.id,
       phoneNumber: item.phoneNumber || item.phone_number,
       name: item.name,
@@ -29,18 +49,11 @@ export class ClientApiService {
   }
 
   public async updateClient(id: string, name: string | null, isRegistered: boolean, metadata?: Record<string, any>): Promise<IClient> {
-    const response = await fetch(`${this.baseUrl}/${id}`, {
+    const result: any = await executeSecureRequest(`${this.baseUrl}/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, isRegistered, metadata }),
     });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.message || 'Error al actualizar el cliente');
-    }
-
-    const data = await response.json();
+    const data = result.data || result;
     return {
       id: data.id,
       phoneNumber: data.phoneNumber || data.phone_number,
@@ -53,18 +66,11 @@ export class ClientApiService {
 
   public async createClient(phoneNumber: string, name: string | null, isRegistered: boolean, metadata?: Record<string, any>): Promise<IClient> {
     const id = crypto.randomUUID();
-    const response = await fetch(this.baseUrl, {
+    const result: any = await executeSecureRequest(this.baseUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, phoneNumber, name, isRegistered, metadata }),
     });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.message || 'Error al crear el cliente');
-    }
-
-    const data = await response.json();
+    const data = result.data || result;
     return {
       id: data.id,
       phoneNumber: data.phoneNumber || data.phone_number,
@@ -76,17 +82,10 @@ export class ClientApiService {
   }
 
   public async resetSession(phoneNumber: string): Promise<void> {
-    const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/chats/${phoneNumber}/reset`;
-    const response = await fetch(url, {
+    await executeSecureRequest(`${getApiUrl()}/chats/${phoneNumber}/reset`, {
       method: 'DELETE',
     });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.message || 'Error al reiniciar la sesión del cliente');
-    }
   }
 }
 
 export const clientService = new ClientApiService();
-

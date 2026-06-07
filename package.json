@@ -1,0 +1,8 @@
+{
+  "name": "chatbot-modulo-saludo",
+  "private": true,
+  "workspaces": [
+    "whatsapp-backend",
+    "whatsapp-dashboard"
+  ]
+}

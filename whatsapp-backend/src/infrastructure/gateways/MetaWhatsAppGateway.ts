@@ -12,7 +12,7 @@ export class MetaWhatsAppGateway implements IWhatsAppGateway {
   private readonly token: string;
 
   constructor(phoneNumberId: string, accessToken: string) {
-    this.baseUrl = `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`;
+    this.baseUrl = `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`;
     this.token = accessToken;
   }
 

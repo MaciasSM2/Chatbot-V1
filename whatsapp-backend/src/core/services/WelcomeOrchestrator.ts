@@ -5,6 +5,7 @@ import { HumanDelayService } from "./HumanDelayService";
 import { GreetingCategory } from "../entities/GreetingTemplate";
 import { IdentityValidator } from "./IdentityValidator";
 import { ModuleSettingsService } from "./ModuleSettingsService";
+import { IBrandRepository } from "../interfaces/repositories/IBrandRepository";
 
 export class WelcomeOrchestrator {
   public static readonly sessionGenders = new Map<string, 'M' | 'F'>();
@@ -16,7 +17,8 @@ export class WelcomeOrchestrator {
     private readonly dateTimeManager: DateTimeManager,
     private readonly delayService: HumanDelayService,
     identityValidator?: IdentityValidator,
-    private readonly moduleService?: ModuleSettingsService
+    private readonly moduleService?: ModuleSettingsService,
+    private readonly brandRepository?: IBrandRepository
   ) {
     this.identityValidator = identityValidator || new IdentityValidator(clientRepository);
   }
@@ -221,6 +223,29 @@ export class WelcomeOrchestrator {
     
     let text = template.text;
 
+    // Inyectar marca si el repositorio corporativo está disponible
+    if (this.brandRepository) {
+      const brand = await this.brandRepository.getConfig();
+      if (brand) {
+        const companyName = brand.companyName;
+        const companySlogan = brand.companySlogan;
+        const instLang = brand.institutionalLanguage;
+        
+        const BASE_SYSTEM_PROMPT = `
+Eres el asistente virtual de la empresa {{COMPANY_NAME}}. 
+Nuestro slogan es: "{{COMPANY_SLOGAN}}".
+Lineamientos obligatorios de comportamiento y psicolingüística:
+{{INSTITUTIONAL_LANGUAGE}}
+`;
+        const finalPromptHeader = BASE_SYSTEM_PROMPT
+          .replace('{{COMPANY_NAME}}', companyName)
+          .replace('{{COMPANY_SLOGAN}}', companySlogan)
+          .replace('{{INSTITUTIONAL_LANGUAGE}}', instLang);
+        
+        text = `${finalPromptHeader}\nRespuesta del bot:\n${text}`;
+      }
+    }
+
     // Si es continuidad, inyectamos el tiempo transcurrido
     if (category === 'CONTINUITY') {
       const minutesStr = minutes ? `${minutes} minutos` : "5 minutos";
@@ -231,7 +256,7 @@ export class WelcomeOrchestrator {
       text = text.replace("{{name}}", "");
     } else {
       const client = await this.clientRepository.findByPhoneNumber("TEST_BOT_DEBUG");
-      const clientName = client ? `, ${client.name.split(' ')[0]}` : " (USUARIO TEST)";
+      const clientName = (client && client.name) ? `, ${client.name.split(' ')[0]}` : " (USUARIO TEST)";
       text = text.replace("{{name}}", clientName);
     }
     return `[TEST-COLOMBIA] [${dayType}] ${text}`;
@@ -306,5 +331,59 @@ export class WelcomeOrchestrator {
       dayType,
       isNonWorkable
     };
+  }
+
+  /**
+   * Genera un saludo adaptado al contexto temporal y al perfil gramatical del cliente.
+   */
+  public async generateContextualGreeting(phone: string): Promise<string> {
+    const client = await this.clientRepository.findByPhoneNumber(phone);
+    
+    // 1. Resolver variables temporales granulares del huso horario de Colombia
+    const now = new Date();
+    const dayType = await this.dateTimeManager.getDayType(now);
+    const timePeriod = this.dateTimeManager.getTimePeriod(now);
+
+    // 2. Extraer la plantilla base correspondiente desde MariaDB o el almacén InMemory de contingencia
+    const templates = await this.greetingRepository.getTemplates(dayType, timePeriod, 'RESPONSE');
+    if (!templates || templates.length === 0) {
+      return `¡Hola! Bienvenido.`;
+    }
+    const template = templates[0];
+    if (!template) {
+      return `¡Hola! Bienvenido.`;
+    }
+    let message = template.text;
+
+    // 3. Sistema Determinista de Flexión de Género (Recuperación de funcionalidad core)
+    if (client && client.isRegistered) {
+      message = message.replace('{{name}}', `, ${client.name || 'Usuario'}`);
+      
+      const gender = client.metadata?.gender || 'N';
+      if (gender === 'Caballero' || gender === 'M') {
+        message = this.applyGenderMorphology(message, 'bienvenido', 'estimado');
+      } else if (gender === 'Dama' || gender === 'F') {
+        message = this.applyGenderMorphology(message, 'bienvenida', 'estimada');
+      } else {
+        message = this.applyGenderMorphology(message, 'le damos la bienvenida', 'apreciable');
+      }
+    } else {
+      message = message.replace('{{name}}', '').replace('Estimado/a', 'Cordial saludo');
+      message = this.applyGenderMorphology(message, 'bienvenido/a', 'estimado/a');
+    }
+
+    const resolvedGender: 'M' | 'F' = (client && (client.metadata?.gender === 'Dama' || client.metadata?.gender === 'F')) ? 'F' : 'M';
+    message = this.applyGender(message, resolvedGender);
+
+    return message;
+  }
+
+  /**
+   * Realiza la sustitución de tokens gramaticales de forma segura y controlada por código.
+   */
+  private applyGenderMorphology(text: string, welcomeToken: string, esteemToken: string): string {
+    return text
+      .replace(/{{welcome_token}}/g, welcomeToken)
+      .replace(/{{esteem_token}}/g, esteemToken);
   }
 }

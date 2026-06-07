@@ -6,7 +6,7 @@ export type DayType =
   | 'HOLIDAY_WORKABLE' 
   | 'HOLIDAY_NON_WORKABLE';
 
-export type TimePeriod = 'MORNING' | 'AFTERNOON' | 'NIGHT';
+export type TimePeriod = 'MORNING' | 'AFTERNOON' | 'NIGHT' | 'EARLY_MORNING';
 
 export type GreetingCategory = 'INITIATION' | 'RESPONSE' | 'CONTINUITY';
 

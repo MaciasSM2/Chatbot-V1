@@ -1,63 +1,91 @@
 /**
  * @file AuthMiddleware.ts
- * @description Middleware encargado de interceptar el ciclo req/res de Express
- * para validar privilegios administrativos antes de tocar endpoints críticos.
+ * @description Interceptor perimetral que protege las rutas del Dashboard.
+ * Incorpora un analizador manual de cookies inmune a ataques de inyección.
  */
-
 import { Request, Response, NextFunction } from 'express';
-import { TokenService } from '../../../core/services/TokenService';
+import { SecurityService } from '../../../core/services/SecurityService';
 
-// Extensión tipada de la interfaz Request de Express mediante Declaration Merging
 declare global {
   namespace Express {
     interface Request {
-      user?: import('../../../core/services/TokenService').IAdminPayload;
+      user?: {
+        username: string;
+        role: string;
+        origin?: string;
+      };
+      adminContext?: any;
     }
   }
 }
 
 export class AuthMiddleware {
-  constructor(private readonly tokenService: TokenService) {}
+  constructor(private readonly securityService: SecurityService) {}
 
   /**
-   * Intercepta la petición HTTP, evalúa el esquema Bearer y autoriza el paso al controlador.
+   * Intercepta la solicitud HTTP y valida la presencia de un token JWT consistente.
    */
-  public handle = async (req: Request, res: Response, next: NextFunction): Promise<void | Response> => {
+  public intercept = (req: Request, res: Response, next: NextFunction): void => {
     try {
+      let activeToken: string | null = null;
+
+      // 1. Intentar capturar el token desde el encabezado estándar Authorization Bearer
       const authHeader = req.headers.authorization;
-
-      // Validación estructural del encabezado de autorización
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({
-          error: 'Unauthorized',
-          message: 'Se requiere un token de tipo Bearer válido en el encabezado de autorización.'
-        });
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        activeToken = authHeader.split(' ')[1] || null;
       }
 
-      // Extracción del hash del token omitiendo la palabra reservada 'Bearer '
-      const token = authHeader.split(' ')[1];
-      if (!token) {
-        return res.status(401).json({
-          error: 'Unauthorized',
-          message: 'Estructura de token malformada.'
-        });
+      // 2. RESOLUCIÓN DE DEUDA: Analizador manual de cookies integrado (Self-Contained Cookie Parser)
+      if (!activeToken && req.headers.cookie) {
+        activeToken = this.parseCookieFromHeaders(req.headers.cookie, 'admin_session_token');
+        if (!activeToken) {
+          activeToken = this.parseCookieFromHeaders(req.headers.cookie, 'token');
+        }
       }
 
-      // Delegación de la verificación al servicio puro de dominio
-      const decodedPayload = this.tokenService.verifyToken(token);
+      if (!activeToken) {
+        res.status(401).json({ 
+          success: false, 
+          error: 'Acceso denegado de nivel perimetral: Se requiere un token de sesión activo.' 
+        });
+        return;
+      }
 
-      // Inyección de la identidad en el stream de la petición para auditorías posteriores
-      req.user = decodedPayload;
+      // 3. Delegar la verificación criptográfica al SecurityService del Core (SOLID - D)
+      const administratorContext = this.securityService.verifySessionToken(activeToken);
+      
+      // Inyectar el contexto verificado dentro del ciclo de vida del Request
+      (req as any).adminContext = administratorContext;
+      (req as any).user = administratorContext; // Alias para compatibilidad con código existente (ej. ModuleSettingsController)
 
-      // Cede el control de la ejecución al siguiente nodo (Middleware o Controlador)
       return next();
-
-    } catch (error: any) {
-      // Captura controlada de excepciones de dominio específicas
-      return res.status(401).json({
-        error: 'Unauthorized',
-        message: error?.message || 'Fallo de autenticación en la capa de seguridad.'
+    } catch (securityException: any) {
+      res.status(401).json({ 
+        success: false, 
+        error: securityException.message || 'Validación de privilegios denegada.' 
       });
     }
   };
+
+  /**
+   * Alias de ruteo Express compatible con handle original
+   */
+  public handle = (req: Request, res: Response, next: NextFunction): void => {
+    return this.intercept(req, res, next);
+  };
+
+  /**
+   * Analiza de forma determinista la cabecera Cookie sin dependencias externas.
+   * Evita vulnerabilidades de denegación de servicio por expresiones regulares maliciosas (ReDoS).
+   */
+  private parseCookieFromHeaders(cookieHeaderString: string, targetKey: string): string | null {
+    const cleanKey = targetKey.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const cookieRegex = new RegExp(`(?:^|; )${cleanKey}=([^;]*)`);
+    const matchResult = cookieHeaderString.match(cookieRegex);
+    
+    if (!matchResult || !matchResult[1]) return null;
+    
+    // Decodificar el componente URI para recuperar el token JWT en formato limpio
+    return decodeURIComponent(matchResult[1]);
+  }
 }

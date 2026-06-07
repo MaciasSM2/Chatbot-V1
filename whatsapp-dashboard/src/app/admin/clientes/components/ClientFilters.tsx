@@ -1,73 +1,68 @@
-/**
- * @file ClientFilters.tsx
- * @description Componente de presentación encargado de capturar los criterios de búsqueda 
- * y filtrado por ciclo de vida del cliente en WhatsApp.
- */
+'use client';
 
 import React from 'react';
-import { Search, Users, UserCheck, UserX } from 'lucide-react';
+import { Search, Users, User, Circle } from 'lucide-react';
 
 interface ClientFiltersProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
-  statusFilter: 'all' | 'registered' | 'unregistered';
-  onStatusFilterChange: (value: 'all' | 'registered' | 'unregistered') => void;
+  selectedGender: string;
+  onGenderChange: (value: string) => void;
 }
 
-export const ClientFilters: React.FC<ClientFiltersProps> = ({
+export function ClientFilters({
   searchTerm,
   onSearchChange,
-  statusFilter,
-  onStatusFilterChange,
-}) => {
+  selectedGender,
+  onGenderChange,
+}: ClientFiltersProps) {
   
-  // --- Catálogo de Filtros para evitar duplicación de JSX (DRY Principle) ---
   const filterOptions = [
-    { id: 'all', label: 'Todos los Contactos', icon: Users, color: 'text-indigo-500' },
-    { id: 'registered', label: 'Registrados (Recurrente)', icon: UserCheck, color: 'text-emerald-500' },
-    { id: 'unregistered', label: 'No Registrados (Inicial)', icon: UserX, color: 'text-amber-500' },
+    { id: 'ALL', label: 'Todos los Géneros', icon: Users, color: 'text-text-muted' },
+    { id: 'M', label: 'Masculino (M)', icon: User, color: 'text-blue-500' },
+    { id: 'F', label: 'Femenino (F)', icon: User, color: 'text-pink-500' },
+    { id: 'N', label: 'Neutro / Corp (N)', icon: Circle, color: 'text-emerald-500' },
   ] as const;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200/80 p-5 flex flex-col lg:flex-row gap-4 items-center justify-between">
-      
+    <div className="bg-[#0b0c0d] border border-[var(--border-subtle)] rounded-[2rem] p-6 flex flex-col lg:flex-row gap-4 items-center justify-between shadow-xl">
       {/* Barra de Búsqueda Predictiva */}
       <div className="relative w-full lg:max-w-xl">
-        <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-          <Search size={18} />
+        <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-text-muted">
+          <Search size={16} />
         </span>
         <input
           type="text"
-          placeholder="Buscar por coincidencia en nombre, teléfono o metadatos dinámicos..."
+          placeholder="Buscar por coincidencia en nombre o teléfono..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-gray-800 font-medium"
+          className="w-full pl-11 pr-4 py-3 bg-[#141617] border border-[var(--border-subtle)] rounded-xl text-[11px] placeholder-text-muted/50 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-text-main font-semibold"
         />
       </div>
 
-      {/* Segmented Controls para Segmentación de Flujo WhatsApp */}
+      {/* Segmented Controls para Segmentación de Género */}
       <div className="flex flex-wrap gap-2 w-full lg:w-auto">
         {filterOptions.map((option) => {
-          const isActive = statusFilter === option.id;
+          const isActive = selectedGender === option.id;
           const Icon = option.icon;
 
           return (
             <button
               key={option.id}
-              onClick={() => onStatusFilterChange(option.id)}
-              className={`flex-1 lg:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl transition-all border active:scale-95 cursor-pointer ${
+              onClick={() => onGenderChange(option.id)}
+              type="button"
+              className={`flex-1 lg:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 text-[10px] font-bold rounded-xl transition-all border active:scale-95 cursor-pointer uppercase tracking-wider ${
                 isActive
-                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm shadow-indigo-100'
-                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400'
+                  ? 'bg-brand-primary border-brand-primary text-background-panel shadow-sm shadow-brand-primary/10'
+                  : 'bg-[#141617] border-[var(--border-subtle)] text-text-main hover:bg-[#141617]/50'
               }`}
             >
-              <Icon size={14} className={isActive ? 'text-white' : option.color} />
+              <Icon size={12} className={isActive ? 'text-background-panel' : option.color} />
               {option.label}
             </button>
           );
         })}
       </div>
-
     </div>
   );
-};
+}

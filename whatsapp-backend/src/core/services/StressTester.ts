@@ -1,34 +1,90 @@
 /**
  * @file StressTester.ts
- * @description Simula múltiples usuarios interactuando en milisegundos de diferencia.
+ * @description Framework de inyección de carga masiva y concurrente para certificar la estabilidad del Bot.
+ * Instrumenta las colas de BullMQ de forma controlada sin consumir la cuota de la API de Meta.
  */
+import { EnqueueMessageUseCase } from '../usecases/EnqueueMessageUseCase';
+import logger from '../../infrastructure/logging/Logger';
+import { SystemMetricsManager } from '../../infrastructure/metrics/Metrics';
 
-export const STRESS_SCENARIOS = [
-  { id: 'user_1', name: 'Andrés (Happy Path)', script: ['Hola', 'Pagar', 'Cédula 123', 'Gracias'] },
-  { id: 'user_2', name: 'Marta (Interrupciones)', script: ['Hola', '¿Cuánto cuesta?', '¡No espera!', 'Menú'] },
-  { id: 'user_3', name: 'Luis (Ambigüedad)', script: ['Hla', 'Pagaar', 'Quiro ayuda', 'Grax'] },
-  { id: 'user_4', name: 'Sofía (Silencio)', script: ['Hola', '...', 'ayuda'] },
-  { id: 'user_5', name: 'Carlos (Spam)', script: ['Hola', 'Hola', 'Hola', 'Hola'] }
-];
+interface StressTestResult {
+  totalInjected: number;
+  successfulRequests: number;
+  failedRequests: number;
+  totalDurationMs: number;
+  averageLatencyMs: number;
+}
 
-export class ConcurrencyTester {
-  constructor(private onMessage: (userId: string, text: string) => Promise<void>) {}
+export class StressTester {
+  constructor(private readonly enqueueUseCase: EnqueueMessageUseCase) {}
 
-  public async runBatch() {
-    console.log("🚀 Iniciando Batería de Pruebas de Concurrencia...");
+  /**
+   * Dispara una ráfaga masiva y paralela de mensajes entrantes simulando múltiples usuarios únicos de WhatsApp.
+   */
+  public async executeHighConcurrencyTest(totalMessages: number, concurrencyLimit: number): Promise<StressTestResult> {
+    logger.warn(`🔥 [Stress Test Engine] Iniciando inyección masiva de ${totalMessages} cargas concurrentes...`);
     
-    // Lanzamos todas las promesas en paralelo
-    const testPromises = STRESS_SCENARIOS.map(async (user) => {
-      for (const text of user.script) {
-        // Delay aleatorio entre mensajes de 1 a 4 segundos para simular realidad
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 3000 + 1000));
-        
-        console.log(`[TEST] 👤 ${user.name} envía: "${text}"`);
-        await this.onMessage(user.id, text);
-      }
-    });
+    const startTime = Date.now();
+    let successfulCount = 0;
+    let failedCount = 0;
+    
+    const metrics = SystemMetricsManager.getInstance();
+    const messagePayloads: Array<{ phone: string; text: string }> = [];
 
-    await Promise.all(testPromises);
-    console.log("✅ Prueba de estrés finalizada. Revisa los logs de colisiones.");
+    // 1. Generar la colección de datos de usuarios sintéticos únicos
+    for (let i = 0; i < totalMessages; i++) {
+      const uniquePhone = `57315${String(i).padStart(7, '0')}`;
+      // Intercalar intenciones para forzar la CPU a transicionar estados de la FSM y cotizar fletes
+      const textIntent = i % 3 === 0 ? 'Hola, necesito cotizar un flete' : i % 3 === 1 ? 'Medellín' : 'Rionegro';
+      
+      messagePayloads.push({ phone: uniquePhone, text: textIntent });
+    }
+
+    // 2. Procesar los mensajes por lotes de alta densidad utilizando la red mesh de promesas
+    for (let index = 0; index < messagePayloads.length; index += concurrencyLimit) {
+      const activeChunk = messagePayloads.slice(index, index + concurrencyLimit);
+      
+      const chunkPromises = activeChunk.map(async (payload) => {
+        const singleRequestStart = Date.now();
+        const messageId = `STRESS-ID-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+        try {
+          // Invocar el caso de uso atómico encargándose del encolado en BullMQ
+          await this.enqueueUseCase.execute(
+            messageId,
+            payload.phone,
+            payload.text,
+            null
+          );
+          
+          successfulCount++;
+          // Incrementar de forma física el contador de Prometheus para monitoreo en Grafana
+          metrics.inboundMessagesCounter.inc({ channel: 'SIMULATOR', status: 'SUCCESS' });
+        } catch (error) {
+          failedCount++;
+          metrics.inboundMessagesCounter.inc({ channel: 'SIMULATOR', status: 'ERROR' });
+        } finally {
+          const singleDuration = (Date.now() - singleRequestStart) / 1000;
+          // Registrar la latencia exacta en el histograma perimetral de Prometheus
+          metrics.siceTacLiquidationDuration.observe(singleDuration);
+        }
+      });
+
+      // Ejecutar el lote de forma estrictamente paralela en la CPU
+      await Promise.all(chunkPromises);
+    }
+
+    const totalDurationMs = Date.now() - startTime;
+    const averageLatencyMs = totalDurationMs / totalMessages;
+
+    const testSummary: StressTestResult = {
+      totalInjected: totalMessages,
+      successfulRequests: successfulCount,
+      failedRequests: failedCount,
+      totalDurationMs,
+      averageLatencyMs
+    };
+
+    logger.info('🏆 [Stress Test Engine] Simulación masiva concluida. Resumen de rendimiento:', testSummary);
+    return testSummary;
   }
 }

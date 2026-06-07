@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { CalendarRange, RotateCcw } from 'lucide-react';
-
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL_BASE || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-const API_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`;
+import { getApiUrl, executeSecureRequest } from '../../../core/apiClient';
 
 export const SearchFilters = ({ onDateChange, startDate, endDate, onClear }) => {
   const [loadingHoliday, setLoadingHoliday] = useState(false);
@@ -10,9 +8,8 @@ export const SearchFilters = ({ onDateChange, startDate, endDate, onClear }) => 
   const handleLastHoliday = async () => {
     setLoadingHoliday(true);
     try {
-      const res = await fetch(`${API_URL}/holidays/last`);
-      if (!res.ok) throw new Error("Error obteniendo el festivo");
-      const data = await res.json();
+      const result = await executeSecureRequest(`${getApiUrl()}/holidays/last`);
+      const data = result.data || result;
       if (data && data.date) {
         // Establecer tanto inicio como fin en la fecha del festivo
         onDateChange('start', data.date);

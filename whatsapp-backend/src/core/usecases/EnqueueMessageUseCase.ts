@@ -27,24 +27,31 @@ export class EnqueueMessageUseCase {
     this.fallbackProcessor = processor;
   }
 
-  public async execute(messageId: string, userId: string, messageBody: string, customResponse?: string | null): Promise<boolean> {
+  public async execute(messageId: string, userId: string, messageBody: string, customResponse?: string | null, correlationId?: string): Promise<boolean> {
     if (this.continuityService) {
       await this.continuityService.scheduleFollowUps(userId);
     }
     const useRedis = process.env.USE_REDIS !== 'false';
+    const activeCorrelationId = correlationId || `ST-CORR-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
     if (useRedis && this.redisClient && this.messageQueue) {
       try {
         const isUnique = await this.redisClient.set(`msg_idempotency:${messageId}`, 'processed', 'EX', 86400, 'NX');
 
         if (!isUnique) {
-          logger.warn("Mensaje duplicado detectado y descartado", { messageId });
+          logger.warn("Mensaje duplicado detectado y descartado", { messageId, correlationId: activeCorrelationId });
           return false;
         }
 
         await this.messageQueue.add(
           "process-whatsapp-message",
-          { messageId, userId, messageBody, customResponse },
+          { 
+            messageId, 
+            userId, 
+            messageBody, 
+            customResponse, 
+            metadata: { correlationId: activeCorrelationId } 
+          },
           {
             attempts: 3,
             backoff: {
@@ -53,25 +60,25 @@ export class EnqueueMessageUseCase {
             }
           }
         );
-        logger.info("Mensaje encolado exitosamente para procesamiento", { messageId, userId });
+        logger.info("Mensaje encolado exitosamente para procesamiento", { messageId, userId, correlationId: activeCorrelationId });
         return true;
       } catch (err) {
-        logger.warn("[Queue] Enqueue falló (modo demo), procesando directamente en memoria", { messageId, userId, error: (err as Error).message });
+        logger.warn("[Queue] Enqueue falló (modo demo), procesando directamente en memoria", { messageId, userId, correlationId: activeCorrelationId, error: (err as Error).message });
       }
     }
 
     // Modo memoria local (fallback)
     if (this.processedMessages.has(messageId)) {
-      logger.warn("Mensaje duplicado detectado y descartado (memoria local)", { messageId });
+      logger.warn("Mensaje duplicado detectado y descartado (memoria local)", { messageId, correlationId: activeCorrelationId });
       return false;
     }
     this.processedMessages.set(messageId, Date.now());
-    logger.info("Mensaje procesado en memoria local", { messageId, userId });
+    logger.info("Mensaje procesado en memoria local", { messageId, userId, correlationId: activeCorrelationId });
 
     if (this.fallbackProcessor) {
       // Ejecutar de forma asíncrona para no bloquear el webhook HTTP
       this.fallbackProcessor(messageId, userId, messageBody, customResponse).catch(e => {
-        logger.error("Error en procesamiento directo de fallback", { error: e.message });
+        logger.error("Error en procesamiento directo de fallback", { correlationId: activeCorrelationId, error: e.message });
       });
       return true;
     }

@@ -1,48 +1,196 @@
 version: '3.8'
 
+networks:
+  prochat_secure_mesh:
+    driver: bridge
+
+volumes:
+  mariadb_persistent_data:
+    driver: local
+  redis_persistent_data:
+    driver: local
+  grafana_persistent_data:
+    driver: local
+
 services:
-  # Base de Datos Relacional (PostgreSQL)
-  postgres:
-    image: postgres:15-alpine
-    container_name: whatsapp_db
+  mariadb-server:
+    image: mariadb:10.11
+    container_name: prochat_mariadb_container
     restart: always
+    networks:
+      - prochat_secure_mesh
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: whatsapp_bot
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mariadb_persistent_data:/var/lib/mysql
+      - ./seed_dawn.sql:/docker-entrypoint-initdb.d/seed_dawn.sql:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-u", "root", "-p", "${DB_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  # Bus de Mensajes y Cache (Redis)
-  redis:
-    image: redis:7-alpine
-    container_name: whatsapp_redis
+  redis-server:
+    image: redis:7.2-alpine
+    container_name: prochat_redis_container
     restart: always
-    command: redis-server --appendonly yes
+    networks:
+      - prochat_secure_mesh
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_persistent_data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
-  # Backend (Orquestador de WhatsApp)
-  backend:
-    build: ./whatsapp-backend
-    container_name: whatsapp_api
-    depends_on:
-      - postgres
-      - redis
+  whatsapp-backend:
+    build:
+      context: ./whatsapp-backend
+      dockerfile: Dockerfile
+    container_name: prochat_backend_container
+    restart: always
+    networks:
+      - prochat_secure_mesh
     environment:
-      DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/whatsapp_bot
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET}
-      META_API_TOKEN: ${META_API_TOKEN}
-    ports:
-      - "3000:3000"
+      - NODE_ENV=${NODE_ENV}
+      - PORT=${PORT}
+      - DB_HOST=mariadb-server
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - REDIS_HOST=redis-server
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - WA_VERIFY_TOKEN=${WA_VERIFY_TOKEN}
+      - WA_PHONE_NUMBER_ID=${WA_PHONE_NUMBER_ID}
+      - WA_ACCESS_TOKEN=${WA_ACCESS_TOKEN}
+      - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD}
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+        reservations:
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${PORT:-3000}/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      mariadb-server:
+        condition: service_healthy
+      redis-server:
+        condition: service_healthy
 
-  # Frontend (Dashboard de Administración)
-  frontend:
-    build: ./whatsapp-dashboard
-    container_name: whatsapp_dashboard
+  whatsapp-dashboard:
+    build:
+      context: ./whatsapp-dashboard
+      dockerfile: Dockerfile
+    container_name: prochat_dashboard_container
+    restart: always
+    networks:
+      - prochat_secure_mesh
+    environment:
+      - NEXT_PUBLIC_API_URL=http://nginx-gateway/api
+      - NEXT_PUBLIC_SOCKET_URL=http://nginx-gateway
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - whatsapp-backend
+
+  nginx-gateway:
+    image: nginx:alpine
+    container_name: prochat_nginx_gateway
+    restart: always
     ports:
       - "80:80"
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3000
+      - "443:443"
+    networks:
+      - prochat_secure_mesh
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 20s
+      timeout: 5s
+      retries: 2
     depends_on:
-      - backend
+      - whatsapp-backend
+      - whatsapp-dashboard
+
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: prochat_prometheus_container
+    restart: always
+    networks:
+      - prochat_secure_mesh
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - whatsapp-backend
+
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: prochat_grafana_container
+    restart: always
+    networks:
+      - prochat_secure_mesh
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+      - GF_SERVER_ROOT_URL=http://localhost/telemetry
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    volumes:
+      - grafana_persistent_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '0.30'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - prometheus

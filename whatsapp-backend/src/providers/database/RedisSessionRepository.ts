@@ -8,7 +8,6 @@ export class RedisSessionRepository implements ISessionRepository {
   private static readonly inMemorySessions = new Map<string, ChatSession>();
 
   constructor(private readonly redisClient: Redis) {}
-
   async findByUserId(userId: string): Promise<ChatSession | null> {
     try {
       const data = await this.redisClient.get(`session:${userId}`);
@@ -20,7 +19,9 @@ export class RedisSessionRepository implements ISessionRepository {
         userId, 
         currentStep: parsed.currentStep, 
         updatedAt: new Date(parsed.updatedAt),
-        isPaused: parsed.isPaused || false
+        isPaused: parsed.isPaused || false,
+        metadata: parsed.metadata || {},
+        messageHistory: parsed.messageHistory || []
       });
       RedisSessionRepository.inMemorySessions.set(userId, session);
       return session;
@@ -35,7 +36,9 @@ export class RedisSessionRepository implements ISessionRepository {
       const payload = JSON.stringify({ 
         currentStep: session.currentStep, 
         updatedAt: session.updatedAt,
-        isPaused: session.isPaused
+        isPaused: session.isPaused,
+        metadata: session.metadata,
+        messageHistory: session.history
       });
       await this.redisClient.setex(`session:${session.userId}`, this.TTL_SECONDS, payload);
     } catch (err) {
@@ -44,7 +47,6 @@ export class RedisSessionRepository implements ISessionRepository {
     // Siempre guardar en memoria
     RedisSessionRepository.inMemorySessions.set(session.userId, session);
   }
-
   async delete(userId: string): Promise<void> {
     try {
       await this.redisClient.del(`session:${userId}`);
@@ -57,21 +59,50 @@ export class RedisSessionRepository implements ISessionRepository {
 
   async findAll(): Promise<ChatSession[]> {
     try {
-      const keys = await this.redisClient.keys("session:*");
+      const keys: string[] = [];
+      
+      // Use SCAN stream to get keys as requested in Phase 24
+      await new Promise<void>((resolve, reject) => {
+        const stream = this.redisClient.scanStream({
+          match: `session:*`,
+          count: 100
+        });
+
+        stream.on('data', (resultKeys: string[]) => {
+          keys.push(...resultKeys);
+        });
+
+        stream.on('end', () => {
+          resolve();
+        });
+
+        stream.on('error', (err) => {
+          reject(err);
+        });
+      });
+
       const sessions: ChatSession[] = [];
-      for (const key of keys) {
-        const data = await this.redisClient.get(key);
-        if (data) {
-          const parsed = JSON.parse(data);
-          const userId = key.replace("session:", "");
-          const session = new ChatSession({
-            userId,
-            currentStep: parsed.currentStep,
-            updatedAt: new Date(parsed.updatedAt),
-            isPaused: parsed.isPaused || false
-          });
-          sessions.push(session);
-          RedisSessionRepository.inMemorySessions.set(userId, session);
+      if (keys.length > 0) {
+        // Paired with MGET to avoid network bottlenecks
+        const rawSessionsChunk = await this.redisClient.mget(...keys);
+        
+        for (let i = 0; i < keys.length; i++) {
+          const rawText = rawSessionsChunk[i];
+          const key = keys[i];
+          if (rawText && key) {
+            const parsed = JSON.parse(rawText);
+            const userId = key.replace("session:", "");
+            const session = new ChatSession({
+              userId,
+              currentStep: parsed.currentStep,
+              updatedAt: new Date(parsed.updatedAt),
+              isPaused: parsed.isPaused || false,
+              metadata: parsed.metadata || {},
+              messageHistory: parsed.messageHistory || []
+            });
+            sessions.push(session);
+            RedisSessionRepository.inMemorySessions.set(userId, session);
+          }
         }
       }
       return sessions;

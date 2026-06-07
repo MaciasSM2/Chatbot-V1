@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -17,6 +17,7 @@
     "react-dom": "19.2.4",
     "recharts": "^3.8.1",
     "socket.io-client": "^4.8.3",
+    "swr": "^2.4.1",
     "xlsx": "^0.18.5",
     "zustand": "^5.0.13"
   },

@@ -10,7 +10,7 @@ export class GreetingController {
     try {
       const { day, time, category } = req.query;
       const validDays = ['WEEKDAY', 'WEEKEND', 'SATURDAY_WORKABLE', 'SUNDAY_WORKABLE', 'HOLIDAY_WORKABLE', 'HOLIDAY_NON_WORKABLE'];
-      const validTimes = ['MORNING', 'AFTERNOON', 'NIGHT'];
+      const validTimes = ['MORNING', 'AFTERNOON', 'NIGHT', 'EARLY_MORNING'];
       const validCategories = ['INITIATION', 'RESPONSE', 'CONTINUITY'];
 
       if (day && time) {
@@ -59,7 +59,7 @@ export class GreetingController {
       }
 
       const validDays = ['WEEKDAY', 'WEEKEND', 'SATURDAY_WORKABLE', 'SUNDAY_WORKABLE', 'HOLIDAY_WORKABLE', 'HOLIDAY_NON_WORKABLE'];
-      const validTimes = ['MORNING', 'AFTERNOON', 'NIGHT'];
+      const validTimes = ['MORNING', 'AFTERNOON', 'NIGHT', 'EARLY_MORNING'];
       const validCategories = ['INITIATION', 'RESPONSE', 'CONTINUITY'];
 
       // Validación de tipos literales
@@ -98,7 +98,7 @@ export class GreetingController {
       }
 
       const validDays = ['WEEKDAY', 'WEEKEND', 'SATURDAY_WORKABLE', 'SUNDAY_WORKABLE', 'HOLIDAY_WORKABLE', 'HOLIDAY_NON_WORKABLE'];
-      const validTimes = ['MORNING', 'AFTERNOON', 'NIGHT'];
+      const validTimes = ['MORNING', 'AFTERNOON', 'NIGHT', 'EARLY_MORNING'];
       const validCategories = ['INITIATION', 'RESPONSE', 'CONTINUITY'];
 
       // Validación de tipos literales

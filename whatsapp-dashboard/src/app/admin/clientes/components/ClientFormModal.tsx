@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file ClientFormModal.tsx
  * @description Dumb Component que renderiza un formulario dinámico basado en el store de campos.
