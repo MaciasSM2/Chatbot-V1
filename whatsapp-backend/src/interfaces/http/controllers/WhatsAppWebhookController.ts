@@ -29,35 +29,39 @@ export class WhatsAppWebhookController {
     res.status(200).json({ success: true, received: true });
 
     setImmediate(() => {
-      const entryNode = payloadBody.entry?.[0];
-      const changeNode = entryNode?.changes?.[0]?.value;
-      const incomingMessage = changeNode?.messages?.[0];
+      try {
+        const entryNode = payloadBody.entry?.[0];
+        const changeNode = entryNode?.changes?.[0]?.value;
+        const incomingMessage = changeNode?.messages?.[0];
 
-      if (!incomingMessage) {
-        return;
-      }
-
-      const clientPhone = incomingMessage.from;
-      logger.info(`[Meta Webhook Event] Received text payload from WhatsApp: ${clientPhone}`, { correlationId });
-
-      this.messageQueue.add('process-whatsapp-message', {
-        from: clientPhone,
-        text: incomingMessage.text,
-        metadata: {
-          correlationId,
-          timestamp: incomingMessage.timestamp,
-          messageId: incomingMessage.id
+        if (!incomingMessage) {
+          return;
         }
-      }, {
-        jobId: `JOB-${incomingMessage.id}`,
-        removeOnComplete: true,
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 2000 }
-      }).then((job) => {
-        logger.info(`Job enqueued. ID: ${job.id}`, { correlationId });
-      }).catch((err) => {
-        logger.error(`[Queue Injection Error] Webhook enqueue failed: ${err.message}`, { correlationId });
-      });
+
+        const clientPhone = incomingMessage.from;
+        logger.info(`[Meta Webhook Event] Received text payload from WhatsApp: ${clientPhone}`, { correlationId });
+
+        this.messageQueue.add('process-whatsapp-message', {
+          from: clientPhone,
+          text: incomingMessage.text,
+          metadata: {
+            correlationId,
+            timestamp: incomingMessage.timestamp,
+            messageId: incomingMessage.id
+          }
+        }, {
+          jobId: `JOB-${incomingMessage.id}`,
+          removeOnComplete: true,
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 2000 }
+        }).then((job) => {
+          logger.info(`Job enqueued. ID: ${job.id}`, { correlationId });
+        }).catch((err) => {
+          logger.error(`[Queue Injection Error] Webhook enqueue failed: ${err.message}`, { correlationId });
+        });
+      } catch (err: any) {
+        logger.error(`[Webhook Immediate Error] Unhandled exception: ${err.message}`, { correlationId });
+      }
     });
   };
 }

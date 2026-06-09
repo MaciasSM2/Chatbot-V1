@@ -107,8 +107,8 @@ services:
     networks:
       - prochat_secure_mesh
     environment:
-      - NEXT_PUBLIC_API_URL=http://nginx-gateway/api
-      - NEXT_PUBLIC_SOCKET_URL=http://nginx-gateway
+      - NEXT_PUBLIC_API_URL=/api
+      - NEXT_PUBLIC_SOCKET_URL=/
     deploy:
       resources:
         limits:

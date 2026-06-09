@@ -35,3 +35,11 @@ Thumbs.db
 # Diagnostic / AI Graph Outputs
 graphify-out/
 .agents/
+
+# External skills (not project code)
+caveman/
+graphify/
+
+# Workspace lockfiles (root is canonical)
+whatsapp-backend/package-lock.json
+whatsapp-dashboard/package-lock.json

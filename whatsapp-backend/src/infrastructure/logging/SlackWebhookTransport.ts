@@ -21,15 +21,14 @@ export class SlackWebhookTransport extends Transport {
    * Intercepta el log emitido por Winston y despacha la notificación cifrada si cumple el umbral.
    */
   public override log(info: any, next: () => void): void {
+    // Llamar next() síncronamente para no bloquear el pipeline de Winston
+    next();
+
+    if (!this.webhookUrl || info.level !== 'error') {
+      return;
+    }
+
     setImmediate(async () => {
-      if (!this.webhookUrl) {
-        return next();
-      }
-
-      if (info.level !== 'error') {
-        return next();
-      }
-
       const correlationId = info.correlationId || 'N/A';
       const timestamp = new Date().toISOString();
 
@@ -53,20 +52,16 @@ export class SlackWebhookTransport extends Transport {
       try {
         const networkController = new AbortController();
         const timeoutId = setTimeout(() => networkController.abort(), 4000);
-
         await fetch(this.webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(slackPayload),
           signal: networkController.signal
         });
-
         clearTimeout(timeoutId);
-      } catch (err) {
-        console.error('🚨 [Slack Transport Fatal] No se pudo enviar la trama de emergencia WAN.');
+      } catch {
+        // Silenciar errores de red del transport — no impactar el proceso principal
       }
     });
-
-    return next();
   }
 }

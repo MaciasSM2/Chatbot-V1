@@ -6,20 +6,6 @@ export const useModuleStore = create((set, get) => ({
   auditLogs: [],
   isLoading: false,
   error: null,
-  authToken: typeof window !== 'undefined' ? localStorage.getItem('admin_session_token') : null,
-
-  authenticateAdmin: (token) => {
-    if (token) {
-      localStorage.setItem('admin_session_token', token);
-    } else {
-      localStorage.removeItem('admin_session_token');
-    }
-    set({ authToken: token });
-  },
-
-  setAuthToken: (token) => {
-    get().authenticateAdmin(token);
-  },
 
   isModuleEnabled: (id) => {
     const modules = get().modules;
@@ -30,34 +16,9 @@ export const useModuleStore = create((set, get) => ({
   loadModules: async () => {
     set({ isLoading: true });
     try {
-      const headers = {};
-      const token = get().authToken;
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      let result;
-      try {
-        result = await executeSecureRequest(`${getApiUrl()}/admin/settings/modules`, {
-          headers,
-          credentials: 'include'
-        });
-      } catch (firstErr) {
-        // Auto-login fallback for ease of development/testing
-        const loginResult = await executeSecureRequest(`${getApiUrl()}/auth/login`, {
-          method: 'POST',
-          body: JSON.stringify({ username: 'admin', password: 'admin' }),
-          credentials: 'include'
-        });
-        const loginData = loginResult.data || loginResult;
-        if (loginData.token) {
-          get().setAuthToken(loginData.token);
-        }
-        result = await executeSecureRequest(`${getApiUrl()}/admin/settings/modules`, {
-          headers: loginData.token ? { 'Authorization': `Bearer ${loginData.token}` } : {},
-          credentials: 'include'
-        });
-      }
+      const result = await executeSecureRequest(`${getApiUrl()}/admin/settings/modules`, {
+        credentials: 'include'
+      });
 
       const data = result.data || result;
       const mappedData = data.map(m => ({
@@ -79,14 +40,7 @@ export const useModuleStore = create((set, get) => ({
 
   loadAuditLogs: async () => {
     try {
-      const headers = {};
-      const token = get().authToken;
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       const result = await executeSecureRequest(`${getApiUrl()}/admin/settings/modules/audit`, {
-        headers,
         credentials: 'include'
       });
       const auditData = result.data || result;
@@ -97,7 +51,6 @@ export const useModuleStore = create((set, get) => ({
   },
 
   toggleModule: async (id, status, adminName) => {
-    // Resolve target status: if caller passed current state, we negate it.
     const current = get().modules.find(m => m.id === id);
     const currentStatus = current ? !!(current.active || current.is_enabled) : false;
     const targetStatus = status === currentStatus ? !currentStatus : !!status;
@@ -107,17 +60,9 @@ export const useModuleStore = create((set, get) => ({
     }));
 
     try {
-      const headers = {
-        'Content-Type': 'application/json'
-      };
-      const token = get().authToken;
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       await executeSecureRequest(`${getApiUrl()}/admin/settings/modules/${id}`, {
         method: 'PATCH',
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ is_enabled: targetStatus, adminName })
       });

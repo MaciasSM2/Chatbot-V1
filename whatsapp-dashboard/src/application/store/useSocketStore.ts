@@ -1,30 +1,28 @@
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
-import { getApiUrl } from '../../core/apiClient';
 
 interface SocketState {
   socket: Socket | null;
-  establishLiveConnection: (operatorTokenId?: string) => Socket;
+  establishLiveConnection: () => Socket;
   terminateLiveConnection: () => void;
 }
-
-const SOCKET_URL = getApiUrl().replace(/\/api$/, '');
 
 export const useSocketStore = create<SocketState>((set, get) => ({
   socket: null,
 
-  establishLiveConnection: (operatorTokenId?: string) => {
+  establishLiveConnection: () => {
     const existing = get().socket;
     if (existing?.connected) return existing;
 
-    const token = operatorTokenId
-      || (typeof window !== 'undefined' ? localStorage.getItem('admin_session_token') : undefined);
+    const socketUrl = typeof window !== 'undefined'
+      ? window.location.origin
+      : 'http://whatsapp-backend:3000';
 
-    const socket: Socket = io(SOCKET_URL, {
-      query: token ? { token } : undefined,
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 2000,
+    const socket: Socket = io(socketUrl, {
+      path: '/socket.io/',
+      transports: ['websocket'],
+      autoConnect: true,
+      reconnectionAttempts: 5
     });
 
     socket.on('connect', () => {

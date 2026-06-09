@@ -231,25 +231,26 @@ export class ChatController {
    * Altera el estado del flag de automatización en MariaDB y propaga el cambio por WebSockets.
    */
   public toggleBotAutomation = async (req: Request, res: Response): Promise<void> => {
-    const { phone_number, is_paused } = req.body;
+    const phoneNumber = req.body.phoneNumber || req.body.phone_number;
+    const isPaused = req.body.isPaused ?? req.body.is_paused;
     const operatorId = (req as any).adminContext?.operatorId || 'SYSTEM';
 
-    if (!phone_number || is_paused === undefined) {
-      res.status(400).json({ success: false, error: 'Número de teléfono y flag is_paused mandatorios.' });
+    if (!phoneNumber || isPaused === undefined) {
+      res.status(400).json({ success: false, error: 'Número de teléfono y flag isPaused mandatorios.' });
       return;
     }
 
-    const numericPauseFlag = is_paused ? 1 : 0;
+    const numericPauseFlag = isPaused ? 1 : 0;
 
     try {
       // 1. Ejecutar la mutación atómica en MariaDB sobre la tabla unificada de clientes
       const [_result] = await this.dbPool.query(
         `UPDATE clients SET is_paused = ? WHERE phone_number = ?`,
-        [numericPauseFlag, phone_number]
+        [numericPauseFlag, phoneNumber]
       );
 
       // Mutar la sesión de la FSM también para mantener la consistencia híbrida
-      let session = await this.sessionRepository.findByUserId(phone_number);
+      let session = await this.sessionRepository.findByUserId(phoneNumber);
       if (session) {
         if (numericPauseFlag === 1) {
           session.pauseBot();
@@ -259,7 +260,7 @@ export class ChatController {
         await this.sessionRepository.save(session);
       }
 
-      logger.info(`🔄 [Agent Interception] Operador ${operatorId} cambió automatización para ${phone_number} a: ${numericPauseFlag}`);
+      logger.info(`🔄 [Agent Interception] Operador ${operatorId} cambió automatización para ${phoneNumber} a: ${numericPauseFlag}`);
 
       res.status(200).json({
         success: true,

@@ -114,7 +114,8 @@ export default function CalendarioAdminPage() {
     setIsLoading(true);
     try {
       const result = await executeSecureRequest(`${getApiUrl()}/calendar`);
-      setExceptions(result.data || result);
+      const raw = result.data || result;
+      setExceptions(Array.isArray(raw) ? raw : []);
     } catch (err) {
       console.error(err);
       showToast('Error de conexión con el servidor.', 'error');

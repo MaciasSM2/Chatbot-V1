@@ -50,7 +50,7 @@ export default function UnifiedConfigurationDashboard() {
     }
   };
 
-  const isCustomHex = localFields.themeAccent.startsWith('#');
+  const isCustomHex = localFields.themeAccent?.startsWith('#') ?? false;
 
   return (
     <div className="space-y-8 p-2 text-xs text-text-main animate-in fade-in">

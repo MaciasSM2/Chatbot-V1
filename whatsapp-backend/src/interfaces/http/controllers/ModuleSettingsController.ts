@@ -35,8 +35,7 @@ export class ModuleSettingsController {
       const { id } = req.params;
       const { is_enabled } = req.body;
       
-      // Obtener identidad inyectada por AuthMiddleware
-      const adminName = req.user?.username || 'UnknownAdmin';
+      const adminName = 'SYSTEM';
 
       if (typeof is_enabled !== 'boolean') {
         return res.status(400).json({ error: "Bad Request", message: "La propiedad is_enabled es requerida y debe ser booleana." });

@@ -4,6 +4,12 @@
  */
 import { Request, Response } from 'express';
 import { StatsService } from '../../../core/services/StatsService';
+import { ApiResponse } from '../types/ApiResponse';
+
+interface DashboardMetricsData {
+  volume: any;
+  funnel: any;
+}
 
 export class AnalyticsController {
   constructor(private readonly statsService: StatsService) {}
@@ -20,13 +26,13 @@ export class AnalyticsController {
       return res.status(200).json({
         success: true,
         data: { volume, funnel }
-      });
+      } as ApiResponse<DashboardMetricsData>);
     } catch (error: any) {
       console.error(`❌ [AnalyticsController] Fallo relacional: ${error.message}`);
       return res.status(500).json({ 
         success: false, 
         error: 'Error de sintaxis interna al compilar estadísticas desde MariaDB.' 
-      });
+      } as ApiResponse);
     }
   }
 
@@ -37,16 +43,13 @@ export class AnalyticsController {
   public async getSummaryStats(_req: Request, res: Response): Promise<Response> {
     try {
       const metrics = await this.statsService.getSummaryStats();
-      return res.status(200).json({
-        success: true,
-        metrics
-      });
+      return res.status(200).json({ success: true, metrics });
     } catch (error: any) {
       console.error(`❌ [AnalyticsController] Fallo en summary: ${error.message}`);
       return res.status(500).json({ 
         success: false, 
         error: 'Error de sintaxis interna al compilar resumen analítico.' 
-      });
+      } as ApiResponse);
     }
   }
 }

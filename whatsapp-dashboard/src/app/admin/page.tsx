@@ -159,6 +159,7 @@ export default function AdminDashboardPage() {
       if (sender === 'user') {
         updated.messages.user += 1;
         // Agregar a la sesión temporalmente
+        if (!updated.sessions.states) updated.sessions.states = {};
         updated.sessions.states.WELCOME = (updated.sessions.states.WELCOME || 0) + 1;
       } else {
         updated.messages.bot += 1;

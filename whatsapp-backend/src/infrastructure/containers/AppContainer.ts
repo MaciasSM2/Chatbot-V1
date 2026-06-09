@@ -4,7 +4,6 @@ import { Queue } from 'bullmq';
 import logger from '../../infrastructure/logging/Logger';
 
 import { UnifiedChatbotOrchestrator } from '../../core/services/UnifiedChatbotOrchestrator';
-import { SecurityService } from '../../core/services/SecurityService';
 import { DateTimeManager } from '../../core/services/DateTimeManager';
 import { SiceTacLiquidationEngine } from '../../core/services/SiceTacLiquidationEngine';
 import { MessageWorker } from '../../core/MessageWorker';
@@ -18,7 +17,6 @@ import { MigrationRunner } from '../database/migrations/MigrationRunner';
 import { V1__Initial_Logistics_Schema } from '../database/migrations/V1__Initial_Logistics_Schema';
 import { AdvancedCircuitBreaker } from '../resilience/AdvancedCircuitBreaker';
 import { StatsService } from '../../core/services/StatsService';
-import { TokenService } from '../../core/services/TokenService';
 import { HumanDelayService } from '../../core/services/HumanDelayService';
 import { AuditLogService } from '../../core/services/AuditLogService';
 import { PromptInjectionGuard } from '../../core/services/PromptInjectionGuard';
@@ -36,25 +34,20 @@ import { MySQLGreetingRepository } from '../../providers/database/MySQLGreetingR
 import { MySQLMessageRepository } from '../../providers/database/MySQLMessageRepository';
 import { MySQLInvoiceRepository } from '../../providers/database/MySQLInvoiceRepository';
 import { MySQLSicetacRepository } from '../../providers/database/MySQLSicetacRepository';
-// import { MySQLCorporateSettingsRepository } from '../../providers/database/MySQLCorporateSettingsRepository';
 import { ColombiaHolidayProvider } from '../providers/ColombiaHolidayProvider';
 import { MetaWhatsAppGateway } from '../../infrastructure/gateways/MetaWhatsAppGateway';
 import { MockWhatsAppGateway } from '../../infrastructure/gateways/MockWhatsAppGateway';
 import { HolidaySyncScheduler } from '../schedulers/HolidaySyncScheduler';
 import { OutboundRetryScheduler } from '../schedulers/OutboundRetryScheduler';
 
-// import { CalendarController } from '../../interfaces/http/CalendarController';
 import { BrandController } from '../../interfaces/http/controllers/BrandController';
 import { GreetingController } from '../../interfaces/http/GreetingController';
 import { WhatsAppWebhookController } from '../../interfaces/http/controllers/WhatsAppWebhookController';
 import { CRMController } from '../../interfaces/http/controllers/CRMController';
 import { HealthController } from '../../interfaces/http/controllers/HealthController';
 import { AnalyticsController } from '../../interfaces/http/controllers/AnalyticsController';
-// import { AuthController } from '../../interfaces/http/controllers/AuthController';
-// import { SimulationController } from '../../interfaces/http/controllers/SimulationController';
-// import { ChatController } from '../../interfaces/http/ChatController';
-// import { QueueMonitorController } from '../../interfaces/http/controllers/QueueMonitorController';
-import { AuthMiddleware } from '../../interfaces/http/middlewares/AuthMiddleware';
+import { ModuleSettingsController } from '../../interfaces/http/controllers/ModuleSettingsController';
+import { TimePeriodsController } from '../../interfaces/http/controllers/TimePeriodsController';
 import { MainRouter } from '../../interfaces/http/routes/MainRouter';
 
 export class AppContainer {
@@ -64,11 +57,9 @@ export class AppContainer {
   public mariadbPool!: Pool;
   public redisClient!: Redis;
   public messageQueue!: Queue | null;
-  public securityService!: SecurityService;
   public chatbotOrchestrator!: UnifiedChatbotOrchestrator;
   public messageWorker!: MessageWorker;
   public mainRouter!: MainRouter;
-  public authGuard!: AuthMiddleware;
 
   public clientRepository!: MySQLClientRepository;
   public brandRepo!: MySQLBrandRepository;
@@ -82,7 +73,6 @@ export class AppContainer {
   public holidayManager!: HolidayManager;
   public dateTimeManager!: DateTimeManager;
   public delayService!: HumanDelayService;
-  public tokenService!: TokenService;
   public statsService!: StatsService;
   public brandPromptService!: BrandPromptService;
   public liquidationService!: TransportLiquidationService;
@@ -101,6 +91,8 @@ export class AppContainer {
   public crmController!: CRMController;
   public healthController!: HealthController;
   public analyticsController!: AnalyticsController;
+  public moduleController!: ModuleSettingsController;
+  public timePeriodsController!: TimePeriodsController;
 
   private constructor() {}
 
@@ -111,17 +103,24 @@ export class AppContainer {
     return AppContainer.instance;
   }
 
-  public async init(_dbConnected: boolean, _redisConnected: boolean): Promise<void> {
-    await this.initialize();
+  public async init(dbConnected: boolean, redisConnected: boolean): Promise<void> {
+    await this.initialize(dbConnected, redisConnected);
   }
 
-  public async initialize(): Promise<void> {
+  public async initialize(dbConnected: boolean = true, redisConnected: boolean = true): Promise<void> {
     if (this.isInitialized) return;
 
     try {
       logger.info('Initializing IoC container wiring...');
 
       this.mariadbPool = dbPool;
+
+      // Verificar conectividad MariaDB antes de continuar (Fail-Fast)
+      if (dbConnected) {
+        await this.mariadbPool.query('SELECT 1');
+        logger.info('MariaDB pool verified.');
+      }
+
       this.redisClient = new Redis({
         host: process.env.REDIS_HOST || '127.0.0.1',
         port: Number(process.env.REDIS_PORT) || 6379,
@@ -129,18 +128,27 @@ export class AppContainer {
         lazyConnect: true
       });
 
+      // Verificar conectividad Redis (Fail-Fast)
+      if (redisConnected) {
+        await this.redisClient.ping();
+        logger.info('Redis cluster verified.');
+      }
+
       const isRedisActive = process.env.USE_REDIS !== 'false';
       this.messageQueue = isRedisActive ? new Queue('process-whatsapp-message', { connection: this.redisClient }) : null;
 
-      await setupUnifiedDatabase(this.mariadbPool);
+      // B. Ejecutar auto-migración DDL — modo graceful: si MariaDB no disponible, continuar en modo demo
+      try {
+        await setupUnifiedDatabase(this.mariadbPool);
 
-      const migrationRunner = new MigrationRunner(this.mariadbPool, [V1__Initial_Logistics_Schema]);
-      await migrationRunner.runAll();
+        const migrationRunner = new MigrationRunner(this.mariadbPool, [V1__Initial_Logistics_Schema]);
+        await migrationRunner.runAll();
+        logger.info('Database schema and migrations applied.');
+      } catch (dbSetupErr: any) {
+        logger.warn(`⚠️ [Demo Mode] DB setup skipped (no MariaDB): ${dbSetupErr.message}`);
+      }
 
       const circuitBreaker = new AdvancedCircuitBreaker(3, 10000);
-
-      this.securityService = new SecurityService();
-      this.authGuard = new AuthMiddleware(this.securityService);
 
       process.env.NODE_ENV === 'test' || process.env.USE_MOCK_GATEWAY === 'true'
         ? new MockWhatsAppGateway()
@@ -165,13 +173,12 @@ export class AppContainer {
       );
 
       this.holidayManager = new HolidayManager(new ColombiaHolidayProvider(), this.mariadbPool);
-      await this.holidayManager.loadHolidays();
+      try { await this.holidayManager.loadHolidays(); } catch { logger.warn('⚠️ [Demo Mode] Holidays not loaded (no DB).'); }
 
       this.dateTimeManager = new DateTimeManager(this.holidayManager, this.mariadbPool);
-      await this.dateTimeManager.loadTimePeriodsConfig();
+      try { await this.dateTimeManager.loadTimePeriodsConfig(); } catch { logger.warn('⚠️ [Demo Mode] Time periods not loaded (no DB).'); }
 
       this.delayService = new HumanDelayService();
-      this.tokenService = new TokenService();
       this.statsService = new StatsService(this.mariadbPool);
       this.brandPromptService = new BrandPromptService(this.brandRepo, circuitBreaker);
 
@@ -213,6 +220,8 @@ export class AppContainer {
       this.crmController = new CRMController(this.clientRepository as any);
       this.healthController = new HealthController(this.mariadbPool, this.redisClient);
       this.analyticsController = new AnalyticsController(this.statsService);
+      this.moduleController = new ModuleSettingsController(this.moduleService);
+      this.timePeriodsController = new TimePeriodsController(this.dateTimeManager);
 
       this.holidaySyncScheduler = new HolidaySyncScheduler(this.mariadbPool);
       this.holidaySyncScheduler.startCronWorker();
@@ -238,8 +247,13 @@ export class AppContainer {
   }
 
   public startWorker(_ioInstance: any): void {
-    this.messageWorker = new MessageWorker(this.redisClient, this.chatbotOrchestrator);
-    this.messageWorker.startWorkerPipeline();
+    try {
+      this.messageWorker = new MessageWorker(this.redisClient, this.chatbotOrchestrator);
+      this.messageWorker.startWorkerPipeline();
+      logger.info('Async worker pipeline and fallbacks started.');
+    } catch (workerErr: any) {
+      logger.warn(`⚠️ [Demo Mode] BullMQ worker not started (no Redis): ${workerErr.message}`);
+    }
 
     this.continuityService.registerFallbackProcessor(async (userId, minutes) => {
       logger.info('Continuity fallback triggered (legacy)', { userId, minutes });
@@ -248,8 +262,6 @@ export class AppContainer {
     this.enqueueMessageUseCase.registerFallbackProcessor(async (messageId, userId, _messageBody, _customResponse) => {
       logger.info('Direct message fallback triggered (legacy)', { messageId, userId });
     });
-
-    logger.info('Async worker pipeline and fallbacks started.');
   }
 
   public getStatsService(): StatsService {

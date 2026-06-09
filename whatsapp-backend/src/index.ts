@@ -25,10 +25,9 @@ class ApplicationBootstrap {
     try {
       logger.info('🚀 [Boot] Iniciando secuencia de arranque asíncrona de ApplicationBootstrap...');
 
-      // 1. Inicializar el Contenedor IoC (Levanta esquemas DDL MariaDB y pool de Redis)
-      // Usamos el flag auto-detect para db/redis en el contenedor
-      const dbConnected = true;
-      const redisConnected = true;
+      // 1. Inicializar el Contenedor IoC con verificación real de conectividad
+      const dbConnected = await this.checkDatabaseConnectivity();
+      const redisConnected = await this.checkRedisConnectivity();
       await this.container.init(dbConnected, redisConnected);
 
       // 2. Levantar la capa de transporte HTTP y WebSocket (Express, Socket.io, middleware de rawBody firmas)
@@ -41,6 +40,57 @@ class ApplicationBootstrap {
     } catch (criticalError: any) {
       logger.error('🚨 [Boot Fatal Error] El sistema colapsó en la inicialización:', criticalError.message);
       process.exit(1);
+    }
+  }
+
+  /**
+   * Verifica conectividad con MariaDB mediante ping query.
+   */
+  private async checkDatabaseConnectivity(): Promise<boolean> {
+    try {
+      const mysql = await import('mysql2/promise');
+      const dbPassword = process.env.DB_PASSWORD ?? '';
+      const pool = mysql.createPool({
+        host: process.env.DB_HOST || '127.0.0.1',
+        port: Number(process.env.DB_PORT) || 3306,
+        user: process.env.DB_USER || 'prochat_admin',
+        password: dbPassword,
+        database: process.env.DB_NAME || 'chatbot_crm_db',
+        connectionLimit: 2,
+        connectTimeout: 5000
+      });
+      await pool.query('SELECT 1');
+      await pool.end();
+      logger.info('MariaDB connectivity check passed.');
+      return true;
+    } catch {
+      logger.warn('MariaDB connectivity check failed. Running without database.');
+      return false;
+    }
+  }
+
+  /**
+   * Verifica conectividad con Redis mediante PING.
+   */
+  private async checkRedisConnectivity(): Promise<boolean> {
+    try {
+      const Redis = (await import('ioredis')).default;
+      const client = new Redis({
+        host: process.env.REDIS_HOST || '127.0.0.1',
+        port: Number(process.env.REDIS_PORT) || 6379,
+        password: process.env.REDIS_PASSWORD || undefined,
+        connectTimeout: 5000,
+        lazyConnect: true,
+        maxRetriesPerRequest: 1
+      });
+      await client.connect();
+      const pong = await client.ping();
+      await client.quit();
+      logger.info('Redis connectivity check passed.');
+      return pong === 'PONG';
+    } catch {
+      logger.warn('Redis connectivity check failed. Running without cache.');
+      return false;
     }
   }
 

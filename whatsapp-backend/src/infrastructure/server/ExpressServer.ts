@@ -8,12 +8,9 @@ import { Server as SocketIOServer } from "socket.io";
 import { AppContainer } from "../containers/AppContainer";
 import { registerGlobalMiddlewares, isOriginAllowed } from "../../interfaces/http/middlewares/GlobalMiddlewareRegistry";
 import { MainRouter } from "../../interfaces/http/routes/MainRouter";
-import { AuthController } from "../../interfaces/http/controllers/AuthController";
 import { QueueMonitorController } from "../../interfaces/http/controllers/QueueMonitorController";
 import { SimulationController } from "../../interfaces/http/controllers/SimulationController";
 import { ChatController } from "../../interfaces/http/ChatController";
-import { ModuleSettingsController } from "../../interfaces/http/controllers/ModuleSettingsController";
-import { AnalyticsController } from "../../interfaces/http/controllers/AnalyticsController";
 import { SocketServer } from "./SocketServer";
 import logger from "../logging/Logger";
 import { env } from "../../config/env";
@@ -55,7 +52,7 @@ export class ExpressServer {
     this.app.use(metricsManager.getMetricsRouter());
 
     // 3. Configurar eventos de Sockets (salas privadas)
-    const socketServer = new SocketServer(this.io, this.container.securityService);
+    const socketServer = new SocketServer(this.io);
     socketServer.initEvents();
 
     // 4. Arrancar los workers asíncronos de BullMQ y fallbacks
@@ -88,13 +85,13 @@ export class ExpressServer {
       this.container.whatsAppWebhookController,
       this.container.crmController,
       this.container.brandController,
-      new AuthController(this.container.mariadbPool, this.container.securityService),
       new QueueMonitorController(this.container.messageQueue!),
       new SimulationController(this.container.chatbotOrchestrator, this.container.clientRepository as any),
       new ChatController(this.container.messageRepository, this.container.sessionRepository, this.container.mariadbPool),
       this.container.greetingController,
-      new ModuleSettingsController(this.container.moduleService),
-      new AnalyticsController(this.container.statsService),
+      this.container.moduleController,
+      this.container.analyticsController,
+      this.container.timePeriodsController,
       this.container.redisClient
     );
     this.app.use('/api', mainRouter.getRouter());

@@ -1,14 +1,18 @@
-export function getApiUrl(subPath: string = ''): string {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
-  const apiBase = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
-  return subPath ? `${apiBase}/${subPath.replace(/^\//, '')}` : apiBase;
-}
+const API_BASE_URL = typeof window !== 'undefined'
+  ? '/api'
+  : (process.env.NEXT_PUBLIC_API_URL || 'http://whatsapp-backend:3000/api');
 
 export interface IApiResponse<T = any> {
   success: boolean;
   data?: T;
-  message?: string;
   error?: string;
+  message?: string;
+}
+
+export function getApiUrl(subPath?: string): string {
+  if (!subPath) return API_BASE_URL;
+  const cleanPath = subPath.startsWith('/') ? subPath : `/${subPath}`;
+  return `${API_BASE_URL}${cleanPath}`;
 }
 
 export class ApiError extends Error {
@@ -33,47 +37,49 @@ export class ClientNetworkException extends ApiError {
 
 export async function executeSecureRequest<T = any>(
   endpoint: string,
-  options: RequestInit & { timeout?: number } = {}
+  options: RequestInit = {}
 ): Promise<IApiResponse<T>> {
-  const { timeout = 15000, ...fetchOptions } = options;
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  const url = endpoint.startsWith('/api/') || endpoint.startsWith('http')
+    ? endpoint
+    : getApiUrl(endpoint);
+
+  const defaultHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest'
+  };
+
+  const configuredOptions: RequestInit = {
+    ...options,
+    headers: {
+      ...defaultHeaders,
+      ...(options.headers as Record<string, string> || {})
+    }
+  };
 
   try {
-    const response = await fetch(endpoint, {
-      ...fetchOptions,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'NextJs_Admin_Console',
-        ...fetchOptions.headers
-      },
-      signal: controller.signal,
-    });
+    const networkResponse = await fetch(url, configuredOptions);
 
-    const contentType = response.headers.get('content-type') ?? '';
-    if (!contentType.includes('application/json')) {
-      const preview = await response.text().catch(() => '');
-      throw new ClientNetworkException(
-        response.status,
-        `Respuesta inesperada del servidor (${response.status})`,
-        `Expected JSON but got ${preview.startsWith('<!') ? 'HTML' : contentType || 'unknown'}`
-      );
+    if (networkResponse.status === 401) {
+      console.warn('🔌 Sesión inválida en el perímetro.');
+      return { success: false, error: 'Credenciales inválidas.' };
     }
 
-    const json: IApiResponse<T> = await response.json();
+    const jsonParsed = await networkResponse.json();
 
-    if (!response.ok) {
-      throw new ApiError(json.error || `HTTP ${response.status}`, response.status);
+    if (!networkResponse.ok) {
+      return {
+        success: false,
+        error: jsonParsed.error || `Error de servidor: ${networkResponse.status}`
+      };
     }
 
-    return json;
-  } catch (error: any) {
-    if (error instanceof ApiError) throw error;
-    if (error.name === 'AbortError') {
-      throw new ClientNetworkException(408, 'El servidor no respondió a tiempo. Verifica que el backend esté corriendo.', 'Network_Timeout');
-    }
-    throw new ClientNetworkException(503, 'No se puede conectar con el servidor. Verifica que el backend esté funcionando.', error.message);
-  } finally {
-    clearTimeout(timeoutId);
+    return { success: true, data: jsonParsed };
+
+  } catch (networkError: any) {
+    console.error(`🚨 [Network Fail] No se pudo conectar a ${url}:`, networkError);
+    return {
+      success: false,
+      error: 'Error de conectividad perimetral.'
+    };
   }
 }
