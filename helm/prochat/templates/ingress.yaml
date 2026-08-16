@@ -1,0 +1,30 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prochat-ingress
+  annotations:
+    kubernetes.io/ingress.class: {{ .Values.ingress.className | quote }}
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  rules:
+    {{- range .Values.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ if eq .backendType "backend" }}prochat-backend{{ else }}prochat-dashboard{{ end }}
+                port:
+                  number: {{ if eq .backendType "backend" }}{{ $.Values.backend.service.port }}{{ else }}{{ $.Values.dashboard.service.port }}{{ end }}
+          {{- end }}
+    {{- end }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    {{- toYaml .Values.ingress.tls | nindent 4 }}
+  {{- end }}
+{{- end }}

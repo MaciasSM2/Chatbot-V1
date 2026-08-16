@@ -17,35 +17,34 @@ export class ClientApiService {
     this.baseUrl = `${baseUrl || getApiUrl()}/admin/crm/clients`;
   }
 
-  /**
-   * Obtiene la colección completa de prospectos desde la central relacional de datos.
-   */
-  public async fetchAllProspects(): Promise<IClientCrmEntity[]> {
-    try {
-      // Consumir el cliente unificado inyectando los contratos de dominio estrictos
-      const response: CrmApiResponse<IClientCrmEntity[]> = await executeSecureRequest(this.baseUrl);
-      
-      if (response.success && response.data) {
-        return response.data;
-      }
-      
-      return [];
-    } catch (networkException) {
-      console.error('❌ [ClientApiService Strict Error] Falló la descarga del CRM:', networkException);
-      throw networkException; // Lanza la excepción tipada para que la capture el Toast Notification Provider
-    }
-  }
-
-  public async getClients(): Promise<IClient[]> {
-    const result: any = await executeSecureRequest(this.baseUrl);
-    return (result.data || result).map((item: any) => ({
+  private mapClientResponse(item: any): IClient {
+    return {
       id: item.id,
       phoneNumber: item.phoneNumber || item.phone_number,
       name: item.name,
       isRegistered: item.isRegistered !== undefined ? item.isRegistered : item.is_registered,
       metadata: item.metadata || {},
       state: item.state || null
-    }));
+    };
+  }
+
+  public async fetchAllProspects(): Promise<IClientCrmEntity[]> {
+    try {
+      const response: CrmApiResponse<IClientCrmEntity[]> = await executeSecureRequest(this.baseUrl);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      return [];
+    } catch (networkException) {
+      console.error('❌ [ClientApiService Strict Error] Falló la descarga del CRM:', networkException);
+      throw networkException;
+    }
+  }
+
+  public async getClients(): Promise<IClient[]> {
+    const result: any = await executeSecureRequest(this.baseUrl);
+    const items = Array.isArray(result.data) ? result.data : Array.isArray(result) ? result : [];
+    return items.map((item: any) => this.mapClientResponse(item));
   }
 
   public async updateClient(id: string, name: string | null, isRegistered: boolean, metadata?: Record<string, any>): Promise<IClient> {
@@ -53,15 +52,7 @@ export class ClientApiService {
       method: 'PUT',
       body: JSON.stringify({ name, isRegistered, metadata }),
     });
-    const data = result.data || result;
-    return {
-      id: data.id,
-      phoneNumber: data.phoneNumber || data.phone_number,
-      name: data.name,
-      isRegistered: data.isRegistered !== undefined ? data.isRegistered : data.is_registered,
-      metadata: data.metadata || {},
-      state: data.state || null
-    };
+    return this.mapClientResponse(result.data || result);
   }
 
   public async createClient(phoneNumber: string, name: string | null, isRegistered: boolean, metadata?: Record<string, any>): Promise<IClient> {
@@ -70,15 +61,7 @@ export class ClientApiService {
       method: 'POST',
       body: JSON.stringify({ id, phoneNumber, name, isRegistered, metadata }),
     });
-    const data = result.data || result;
-    return {
-      id: data.id,
-      phoneNumber: data.phoneNumber || data.phone_number,
-      name: data.name,
-      isRegistered: data.isRegistered !== undefined ? data.isRegistered : data.is_registered,
-      metadata: data.metadata || {},
-      state: data.state || null
-    };
+    return this.mapClientResponse(result.data || result);
   }
 
   public async resetSession(phoneNumber: string): Promise<void> {

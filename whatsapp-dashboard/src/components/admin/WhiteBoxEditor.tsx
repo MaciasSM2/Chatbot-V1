@@ -60,20 +60,20 @@ export const WhiteBoxEditor: React.FC<Props> = ({ greeting, onSave, onDeleteRequ
       ref={elementRef}
       className={`group relative overflow-hidden rounded-3xl border transition-all duration-300 bg-bg-panel p-1 shadow-2xl ${
         isHighlighted 
-          ? 'ring-2 ring-primary border-primary z-10 shadow-[0_0_30px_rgba(16,185,129,0.2)] scale-[1.01]' 
-          : 'border-border-subtle hover:border-brand-primary/30'
+          ? 'ring-2 ring-primary border-primary z-10 shadow-[0_0_30px_var(--theme-accent)] scale-[1.01]' 
+          : 'border-border-subtle hover:border-[var(--theme-accent)]/30'
       }`}
     >
       {/* Header del Editor: Ahora en gris profundo */}
       <div className="flex items-center justify-between bg-bg-header px-6 py-3 rounded-t-[22px] border-b border-border-subtle">
         <div className="flex items-center gap-3">
-          <div className="h-2 w-2 rounded-full bg-brand-primary animate-pulse" />
+          <div className="h-2 w-2 rounded-full bg-[var(--theme-accent)] animate-pulse" />
           <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">
             Regla: {category} / {timePeriod} / {dayType}
           </span>
         </div>
         {isHighlighted && (
-          <span className="text-[9px] font-bold bg-brand-primary text-background-panel px-2 py-0.5 rounded uppercase">
+          <span className="text-[9px] font-bold bg-[var(--theme-accent)] text-background-panel px-2 py-0.5 rounded uppercase">
             Previsualización
           </span>
         )}
@@ -152,7 +152,7 @@ export const WhiteBoxEditor: React.FC<Props> = ({ greeting, onSave, onDeleteRequ
             disabled={!isEdited}
             className={`px-4 py-1.5 rounded-lg font-bold transition-all text-xs ${
               isEdited 
-                ? 'bg-brand-primary hover:bg-brand-hover text-background-panel cursor-pointer shadow-md active:scale-95' 
+                ? 'bg-[var(--theme-accent)] hover:brightness-110 text-background-panel cursor-pointer shadow-md active:scale-95' 
                 : 'bg-bg-input text-text-dim border border-border-subtle cursor-not-allowed'
             }`}
           >

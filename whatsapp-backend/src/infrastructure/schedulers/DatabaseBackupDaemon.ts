@@ -27,25 +27,43 @@ export class DatabaseBackupDaemon {
     return DatabaseBackupDaemon.instance;
   }
 
+  private scheduleNextBackup(): void {
+    const now = new Date();
+    const target = new Date(now);
+    target.setHours(23, 45, 0, 0);
+
+    if (target <= now) {
+      target.setDate(target.getDate() + 1);
+    }
+
+    const delayMs = target.getTime() - now.getTime();
+
+    setTimeout(async () => {
+      try {
+        await this.triggerDatabaseDump();
+        await this.enforceRetentionPolicy();
+      } catch (dumpError: any) {
+        logger.error(`[Backup Daemon Error] Falló el ciclo automático de resguardo: ${dumpError.message}`);
+      }
+      this.scheduleNextBackup();
+    }, delayMs);
+  }
+
   /**
    * Arranca la vigilancia en background y programa el disparo del snapshot diario.
    */
   public startAutomatedBackupScheduler(): void {
-    const oneHourInMs = 60 * 60 * 1000;
-    logger.info('🏁 [Backup Daemon] Vigilante de snapshots e integridad física MariaDB encendido.');
+    logger.info('[Backup Daemon] Vigilante de snapshots e integridad física MariaDB encendido.');
 
-    setInterval(async () => {
-      const now = new Date();
-      // Disparar la instrucción exclusivamente en la franja de descanso vehicular (23:45 - 00:00)
-      if (now.getHours() === 23 && now.getMinutes() === 45) {
-        try {
-          await this.triggerDatabaseDump();
-          await this.enforceRetentionPolicy();
-        } catch (dumpError: any) {
-          logger.error(`🚨 [Backup Daemon Error] Falló el ciclo automático de resguardo: ${dumpError.message}`);
-        }
-      }
-    }, oneHourInMs);
+    // Catch-up: si ya pasaron las 23:45 hoy, ejecutar ahora y luego programar próximo
+    const now = new Date();
+    if (now.getHours() >= 23 && now.getMinutes() >= 45) {
+      this.triggerDatabaseDump()
+        .then(() => this.enforceRetentionPolicy())
+        .catch(err => logger.error(`[Backup Daemon] Error en catch-up inicial: ${err.message}`));
+    }
+
+    this.scheduleNextBackup();
   }
 
   /**

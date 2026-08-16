@@ -1,0 +1,96 @@
+name: ProChat Multi-Engine CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  # JOB 1: VALIDACIÓN DE CÓDIGO Y ANÁLISIS ESTÁTICO (TYPECHECK)
+  # ──────────────────────────────────────────────────────────────
+  quality_gate:
+    name: 🛡️ Quality Gate & Typecheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Checkout del Código Fuente
+        uses: actions/checkout@v4
+
+      - name: 🟢 Configurar Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📥 Instalación de Dependencias del Monorepo
+        run: npm ci
+
+      - name: 🔍 Verificación Estricta de Tipos TypeScript (Backend)
+        run: npm run build --workspace=whatsapp-backend -- --noEmit
+
+      - name: 🔍 Verificación Estricta de Tipos TypeScript (Dashboard)
+        run: npm run build --workspace=whatsapp-dashboard
+
+  # ──────────────────────────────────────────────────────────────
+  # JOB 2: PRUEBAS AUTOMATIZADAS Y SEGURIDAD
+  # ──────────────────────────────────────────────────────────────
+  automated_tests:
+    name: 🧪 Unit & Integration Tests
+    needs: quality_gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Checkout del Código Fuente
+        uses: actions/checkout@v4
+
+      - name: 🟢 Configurar Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📥 Instalación de Dependencias
+        run: npm ci
+
+      - name: ⚡ Ejecutar Pruebas Unitarias con Jest
+        run: npm test
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test_jwt_secret_key_minimum_32_characters_long
+          MASTER_ENCRYPTION_KEY: e8f902a34b12c8567123456789abcdef0123456789abcdef0123456789abcdef
+
+      - name: 🔒 Auditoría de Vulnerabilidades en Dependencias
+        run: npm audit --audit-level=high
+
+  # ──────────────────────────────────────────────────────────────
+  # JOB 3: VERIFICACIÓN DE CONTENEDORES DOCKER MULTI-STAGE
+  # ──────────────────────────────────────────────────────────────
+  docker_build_verification:
+    name: 🐋 Docker Multi-stage Build Verification
+    needs: automated_tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Checkout del Código Fuente
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🧱 Validar Build de Imagen Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./whatsapp-backend/Dockerfile
+          push: false
+          tags: prochat-backend:latest
+
+      - name: 🧱 Validar Build de Imagen Dashboard
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./whatsapp-dashboard/Dockerfile
+          push: false
+          tags: prochat-dashboard:latest

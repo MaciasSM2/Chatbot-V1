@@ -25,7 +25,7 @@ export function ClientFilters({
   ] as const;
 
   return (
-    <div className="bg-[#0b0c0d] border border-[var(--border-subtle)] rounded-[2rem] p-6 flex flex-col lg:flex-row gap-4 items-center justify-between shadow-xl">
+    <div className="bg-bg-card border border-border-subtle rounded-[2rem] p-6 flex flex-col lg:flex-row gap-4 items-center justify-between shadow-xl">
       {/* Barra de Búsqueda Predictiva */}
       <div className="relative w-full lg:max-w-xl">
         <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-text-muted">
@@ -36,7 +36,7 @@ export function ClientFilters({
           placeholder="Buscar por coincidencia en nombre o teléfono..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full pl-11 pr-4 py-3 bg-[#141617] border border-[var(--border-subtle)] rounded-xl text-[11px] placeholder-text-muted/50 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-text-main font-semibold"
+          className="w-full pl-11 pr-4 py-3 bg-bg-input border border-border-subtle rounded-xl text-[11px] placeholder-text-muted/50 focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)]/20 focus:border-[var(--theme-accent)] transition-all text-text-main font-semibold"
         />
       </div>
 
@@ -53,8 +53,8 @@ export function ClientFilters({
               type="button"
               className={`flex-1 lg:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 text-[10px] font-bold rounded-xl transition-all border active:scale-95 cursor-pointer uppercase tracking-wider ${
                 isActive
-                  ? 'bg-brand-primary border-brand-primary text-background-panel shadow-sm shadow-brand-primary/10'
-                  : 'bg-[#141617] border-[var(--border-subtle)] text-text-main hover:bg-[#141617]/50'
+                  ? 'bg-[var(--theme-accent)] border-[var(--theme-accent)] text-background-panel shadow-sm shadow-[var(--theme-accent)]/10'
+                  : 'bg-bg-input border-border-subtle text-text-main hover:bg-bg-card-hover'
               }`}
             >
               <Icon size={12} className={isActive ? 'text-background-panel' : option.color} />

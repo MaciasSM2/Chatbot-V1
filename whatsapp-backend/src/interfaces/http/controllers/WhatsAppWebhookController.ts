@@ -10,7 +10,7 @@ export class WhatsAppWebhookController {
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
 
-    const secureVerifyToken = process.env.WA_VERIFY_TOKEN || 'colombia_logistica_handshake_token';
+    const secureVerifyToken = process.env.WA_VERIFY_TOKEN || process.env.META_VERIFY_TOKEN;
 
     if (mode === 'subscribe' && token === secureVerifyToken) {
       logger.info('[Meta Webhook] Handshake verified successfully.');

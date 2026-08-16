@@ -177,3 +177,83 @@ INSERT INTO configuraciones_franjas_horarias (id, etiqueta, hora_inicio, hora_fi
 ('AFTERNOON', 'Tarde', 12, 19, '#f59e0b'),
 ('NIGHT', 'Noche', 19, 1, '#1e293b')
 ON DUPLICATE KEY UPDATE hora_inicio = VALUES(hora_inicio), hora_fin = VALUES(hora_fin);
+
+-- 10. Usuarios Administradores (usuarios_admin)
+CREATE TABLE IF NOT EXISTS usuarios_admin (
+    id VARCHAR(36) PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    email VARCHAR(150) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 11. Configuraciones de Bots (configuracion_bots)
+CREATE TABLE IF NOT EXISTS configuracion_bots (
+    id VARCHAR(36) PRIMARY KEY,
+    usuario_id VARCHAR(36) NOT NULL,
+    tipo_bot ENUM('JS', 'HYBRID', 'FULL_AI') NOT NULL,
+    nombre_bot VARCHAR(100) NOT NULL,
+    activo BOOLEAN DEFAULT TRUE,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_user_bot (usuario_id, tipo_bot)
+);
+
+-- 12. Documentos Base por Bot (documentos_bot)
+CREATE TABLE IF NOT EXISTS documentos_bot (
+    id VARCHAR(36) PRIMARY KEY,
+    bot_id VARCHAR(36) NOT NULL,
+    nombre_archivo VARCHAR(255) NOT NULL,
+    tipo_archivo VARCHAR(50) NOT NULL,
+    contenido_texto LONGTEXT NOT NULL,
+    estructura_json JSON DEFAULT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (bot_id) REFERENCES configuracion_bots(id) ON DELETE CASCADE
+);
+
+-- 13. Reglas FSM Parseadas (reglas_bot)
+CREATE TABLE IF NOT EXISTS reglas_bot (
+    id VARCHAR(36) PRIMARY KEY,
+    bot_id VARCHAR(36) NOT NULL,
+    trigger_keyword VARCHAR(150) NOT NULL,
+    respuesta_texto TEXT NOT NULL,
+    nodo_siguiente VARCHAR(50) DEFAULT NULL,
+    es_fallback BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (bot_id) REFERENCES configuracion_bots(id) ON DELETE CASCADE
+);
+
+-- 14. Configuración IA y Prompts (configuracion_ia)
+CREATE TABLE IF NOT EXISTS configuracion_ia (
+    id VARCHAR(36) PRIMARY KEY,
+    bot_id VARCHAR(36) UNIQUE NOT NULL,
+    proveedor ENUM('gemini', 'openai', 'anthropic') DEFAULT 'gemini',
+    api_key VARCHAR(255) DEFAULT NULL,
+    modelo VARCHAR(50) DEFAULT 'gemini-1.5-flash',
+    prompt_sistema TEXT NOT NULL,
+    umbral_heuristico INT DEFAULT 15,
+    modo_caveman BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (bot_id) REFERENCES configuracion_bots(id) ON DELETE CASCADE
+);
+
+-- 15. Registro de Tokens y Metricas (registros_tokens)
+CREATE TABLE IF NOT EXISTS registros_tokens (
+    id VARCHAR(36) PRIMARY KEY,
+    bot_id VARCHAR(36) NOT NULL,
+    prompt_tokens INT NOT NULL DEFAULT 0,
+    completion_tokens INT NOT NULL DEFAULT 0,
+    total_tokens INT NOT NULL DEFAULT 0,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_bot_tokens (bot_id, creado_en)
+);
+
+-- 16. Personalización Widget Embebible (personalizacion_widget)
+CREATE TABLE IF NOT EXISTS personalizacion_widget (
+    bot_id VARCHAR(36) PRIMARY KEY,
+    color_primario VARCHAR(20) DEFAULT '#075e54',
+    color_burbuja VARCHAR(20) DEFAULT '#dcf8c6',
+    avatar_url TEXT DEFAULT NULL,
+    titulo_header VARCHAR(100) DEFAULT 'WhatsApp Chat',
+    subtitulo_status VARCHAR(100) DEFAULT 'En línea',
+    posicion ENUM('bottom-right', 'bottom-left') DEFAULT 'bottom-right',
+    FOREIGN KEY (bot_id) REFERENCES configuracion_bots(id) ON DELETE CASCADE
+);
+

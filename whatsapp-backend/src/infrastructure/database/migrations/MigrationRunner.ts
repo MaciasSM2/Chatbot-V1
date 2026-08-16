@@ -1,4 +1,5 @@
 import { Pool, PoolConnection } from 'mysql2/promise';
+import crypto from 'crypto';
 import logger from '../../logging/Logger';
 
 export interface IMigrationScript {
@@ -91,13 +92,7 @@ export class MigrationRunner {
   }
 
   private computeHash(migration: IMigrationScript): string {
-    let hash = 0;
     const str = `${migration.version}:${migration.description}:${migration.up.toString()}`;
-    for (let i = 0; i < str.length; i++) {
-      const chr = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + chr;
-      hash |= 0;
-    }
-    return Math.abs(hash).toString(16).padStart(8, '0');
+    return crypto.createHash('sha256').update(str).digest('hex').substring(0, 16);
   }
 }

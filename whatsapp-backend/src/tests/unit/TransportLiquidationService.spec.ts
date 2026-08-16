@@ -3,8 +3,6 @@
  * @description Validación de reglas impositivas y matrices de costos estatales.
  */
 import { TransportLiquidationService, LiquidationRequest } from '../../core/services/TransportLiquidationService';
-import { ISicetacRepository } from '../../core/interfaces/repositories/ISicetacRepository';
-import { IInvoiceRepository } from '../../core/interfaces/repositories/IInvoiceRepository';
 
 describe('💵 TransportLiquidationService - Rule Test Suite', () => {
   
@@ -19,16 +17,6 @@ describe('💵 TransportLiquidationService - Rule Test Suite', () => {
 
   it('debería liquidar una ruta existente aplicando tasa de IVA del 0%', async () => {
     // Arreglar
-    const mockSicetac: any = {
-      getRouteCost: jest.fn().mockResolvedValue({
-        id: 1,
-        origin: 'MEDELLIN',
-        destination: 'BOGOTA',
-        baseCost: 1850000.00,
-        estimatedHours: 10
-      })
-    };
-
     const mockInvoiceRepo: any = {
       save: jest.fn().mockResolvedValue(123) // Retorna Insert ID ficticio
     };
@@ -37,7 +25,7 @@ describe('💵 TransportLiquidationService - Rule Test Suite', () => {
       calculateFreight: jest.fn().mockResolvedValue(1850000.00)
     };
 
-    const service = new TransportLiquidationService(mockSicetac, mockInvoiceRepo, mockLiquidationEngine);
+    const service = new TransportLiquidationService(mockInvoiceRepo, mockLiquidationEngine);
 
     // Actuar
     const result = await service.calculateAndRegister(sampleRequest);
@@ -52,11 +40,7 @@ describe('💵 TransportLiquidationService - Rule Test Suite', () => {
   });
 
   it('debería aplicar tarifa de contingencia si la ruta es inexistente en SICE-TAC', async () => {
-    // Arreglar: Retorna null simulando que la combinación de ciudades no está registrada
-    const mockSicetac: any = {
-      getRouteCost: jest.fn().mockResolvedValue(null)
-    };
-
+    // Arreglar
     const mockInvoiceRepo: any = {
       save: jest.fn().mockResolvedValue(124)
     };
@@ -65,7 +49,7 @@ describe('💵 TransportLiquidationService - Rule Test Suite', () => {
       calculateFreight: jest.fn().mockRejectedValue(new Error('Route not found'))
     };
 
-    const service = new TransportLiquidationService(mockSicetac, mockInvoiceRepo, mockLiquidationEngine);
+    const service = new TransportLiquidationService(mockInvoiceRepo, mockLiquidationEngine);
 
     // Actuar
     const result = await service.calculateAndRegister(sampleRequest);
@@ -75,3 +59,4 @@ describe('💵 TransportLiquidationService - Rule Test Suite', () => {
     expect(result.totalCost).toBe(450000.00);
   });
 });
+

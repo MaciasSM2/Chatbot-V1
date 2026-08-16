@@ -20,11 +20,12 @@ interface BrandConfigData {
 export class BrandController {
   constructor(private readonly brandService: BrandPromptService) {}
 
-  public async getBrandSettings(_req: Request, res: Response): Promise<Response> {
+  public async getBrandSettings(_req: Request, res: Response): Promise<void> {
     try {
       const config = await this.brandService.getRawConfig();
       if (!config) {
-        return res.status(404).json({ success: false, error: 'Configuración base no encontrada.' } as ApiResponse);
+        res.status(404).json({ success: false, error: 'Configuración base no encontrada.' } as ApiResponse);
+        return;
       }
 
       const synchronizedPayload: BrandConfigData = {
@@ -38,13 +39,13 @@ export class BrandController {
         themeAccent: config.themeAccent || 'WHATSAPP_GREEN'
       };
 
-      return res.status(200).json({
+      res.status(200).json({
         success: true,
         data: synchronizedPayload
       } as ApiResponse<BrandConfigData>);
     } catch (error: any) {
       console.error('X [BrandController Error] Falló la resolución del contrato:', error.message);
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Error de infraestructura al recuperar la configuración corporativa.'
       } as ApiResponse);
@@ -54,12 +55,13 @@ export class BrandController {
   /**
    * Actualiza las casillas de identación corporativa.
    */
-  public async updateBrandSettings(req: Request, res: Response): Promise<Response> {
+  public async updateBrandSettings(req: Request, res: Response): Promise<void> {
     try {
       const { companyName, companySlogan, institutionalLanguage, companyLogoUrl, startWorkHour, endWorkHour, operationMode, themeAccent } = req.body;
 
       if (!companyName || companyName.trim() === '') {
-        return res.status(400).json({ success: false, error: 'El nombre de la empresa es un campo obligatorio.' } as ApiResponse);
+        res.status(400).json({ success: false, error: 'El nombre de la empresa es un campo obligatorio.' } as ApiResponse);
+        return;
       }
 
       const isUpdated = await this.brandService.updateBrandIdentity({
@@ -74,29 +76,32 @@ export class BrandController {
       });
 
       if (!isUpdated) {
-        return res.status(404).json({ success: false, error: 'No se encontró la configuración de marca base para actualizar.' } as ApiResponse);
+        res.status(404).json({ success: false, error: 'No se encontró la configuración de marca base para actualizar.' } as ApiResponse);
+        return;
       }
 
-      return res.status(200).json({ success: true, message: 'Identidad corporativa actualizada y sincronizada en el motor de IA.' } as ApiResponse);
+      res.status(200).json({ success: true, message: 'Identidad corporativa actualizada y sincronizada en el motor de IA.' } as ApiResponse);
     } catch (error: any) {
       console.error(`[BrandController][updateBrandSettings] Error: ${error.message}`);
-      return res.status(500).json({ success: false, error: 'Internal Server Error' } as ApiResponse);
+      res.status(500).json({ success: false, error: 'Internal Server Error' } as ApiResponse);
     }
   }
 
   /**
    * Actualiza el perfil de tono de habla de la empresa (sincronizado con operationMode).
    */
-  public async updateBrandTone(req: Request, res: Response): Promise<Response> {
+  public async updateBrandTone(req: Request, res: Response): Promise<void> {
     try {
       const { toneProfile } = req.body;
       if (toneProfile !== 1 && toneProfile !== 2) {
-        return res.status(400).json({ success: false, error: 'Perfil de tono de habla inválido.' } as ApiResponse);
+        res.status(400).json({ success: false, error: 'Perfil de tono de habla inválido.' } as ApiResponse);
+        return;
       }
 
       const config = await this.brandService.getRawConfig();
       if (!config) {
-        return res.status(404).json({ success: false, error: 'Configuración base no encontrada.' } as ApiResponse);
+        res.status(404).json({ success: false, error: 'Configuración base no encontrada.' } as ApiResponse);
+        return;
       }
 
       const isUpdated = await this.brandService.updateBrandIdentity({
@@ -110,13 +115,14 @@ export class BrandController {
       });
 
       if (!isUpdated) {
-        return res.status(500).json({ success: false, error: 'Fallo al sincronizar el tono en base de datos.' } as ApiResponse);
+        res.status(500).json({ success: false, error: 'Fallo al sincronizar el tono en base de datos.' } as ApiResponse);
+        return;
       }
 
-      return res.status(200).json({ success: true, message: 'Perfil semántico de tono de habla actualizado.' } as ApiResponse);
+      res.status(200).json({ success: true, message: 'Perfil semántico de tono de habla actualizado.' } as ApiResponse);
     } catch (error: any) {
       console.error(`[BrandController][updateBrandTone] Error: ${error.message}`);
-      return res.status(500).json({ success: false, error: 'Internal Server Error' } as ApiResponse);
+      res.status(500).json({ success: false, error: 'Internal Server Error' } as ApiResponse);
     }
   }
 }

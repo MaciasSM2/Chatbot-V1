@@ -1,0 +1,46 @@
+{
+  "info": {
+    "name": "ProChat Multi-Engine API v2.0",
+    "description": "Colección oficial para pruebas de autenticación RBAC, gestión de documentos y simulación Quad-Chat.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Autenticación",
+      "item": [
+        {
+          "name": "Login - Perfil Presentación",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"presentacion@prochat.io\",\n  \"password\": \"AdminPass2026!\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v2/auth/login", "host": ["{{base_url}}"], "path": ["api", "v2", "auth", "login"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Simulador Quad-Chat",
+      "item": [
+        {
+          "name": "POST /multi-chat (Procesamiento Simultáneo)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantId\": \"tenant-demo-01\",\n  \"text\": \"¿Cuál es la diferencia entre transporte de carga pesada y ligera?\",\n  \"userPhone\": \"POSTMAN-TESTER\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v2/simulator/multi-chat", "host": ["{{base_url}}"], "path": ["api", "v2", "simulator", "multi-chat"] }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3014" }
+  ]
+}

@@ -10,8 +10,8 @@ start cmd /k "cd whatsapp-dashboard && npm run dev"
 
 echo ========================================================
 echo Los servicios se estan iniciando en nuevas ventanas.
-echo Backend: http://localhost:3000
-echo Dashboard: http://localhost:3001
+echo Backend: http://localhost:3014
+echo Dashboard: http://localhost:3015
 echo Nota: Si no tienes PostgreSQL local instalado,
 echo el backend iniciara automaticamente en MODO MEMORIA.
 echo ========================================================

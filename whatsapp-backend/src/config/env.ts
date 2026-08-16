@@ -5,7 +5,7 @@ dotenv.config();
 
 const envValidationSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.coerce.number().default(3000),
+  PORT: z.coerce.number().default(3014),
 
   DB_HOST: z.string().default('127.0.0.1'),
   DB_PORT: z.coerce.number().default(3306),

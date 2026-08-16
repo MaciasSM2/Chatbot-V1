@@ -63,6 +63,21 @@ export class HolidaySyncScheduler {
   /**
    * Inicializa un bucle de verificación de baja fricción en background que despierta cada 24 horas.
    */
+  private async needsYearSync(): Promise<boolean> {
+    try {
+      const currentYear = new Date().getFullYear();
+      const [rows] = await this.mariadbPool.query<any[]>(
+        `SELECT MAX(exception_date) as last_date FROM holiday_exceptions WHERE type = 'HOLIDAY'`
+      );
+      const lastDate = rows?.[0]?.last_date;
+      if (!lastDate) return true;
+      const lastYear = new Date(lastDate).getFullYear();
+      return lastYear < currentYear;
+    } catch {
+      return false;
+    }
+  }
+
   public startCronWorker(): void {
     const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
     
@@ -72,14 +87,13 @@ export class HolidaySyncScheduler {
     });
 
     setInterval(async () => {
-      const currentDate = new Date();
-      // Si es Primero de Enero, forzar el pre-cálculo de la matriz del nuevo año
-      if (currentDate.getMonth() === 0 && currentDate.getDate() === 1) {
-        try {
+      try {
+        if (await this.needsYearSync()) {
+          logger.info('[Scheduler] Detectado año sin festivos sincronizados. Forzando sync.');
           await this.executeAnnualSync();
-        } catch (err: any) {
-          logger.error('[Scheduler Interval Error] Falló la tarea de año nuevo:', err.message);
         }
+      } catch (err: any) {
+        logger.error('[Scheduler Interval Error] Falló la verificación de festivos:', err.message);
       }
     }, twentyFourHoursInMs);
   }

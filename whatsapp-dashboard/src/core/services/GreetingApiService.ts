@@ -14,7 +14,7 @@ export class GreetingApiService {
     const url = `${this.baseUrl}${query}`;
 
     const result: any = await executeSecureRequest(url);
-    return result.data || result;
+    return Array.isArray(result.data) ? result.data : [];
   }
 
   public async saveGreeting(greeting: IGreeting): Promise<void> {

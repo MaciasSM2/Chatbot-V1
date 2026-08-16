@@ -1,0 +1,6 @@
+apiVersion: v2
+name: prochat
+description: Helm Chart oficial para desplegar y escalar el ecosistema ProChat Multi-Engine en Kubernetes.
+type: application
+version: 2.0.0
+appVersion: "2.0.0"

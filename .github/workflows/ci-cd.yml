@@ -53,7 +53,7 @@ jobs:
       - name: Build hardened backend Docker artifact
         uses: docker/build-push-action@v5
         with:
-          context: ./whatsapp-backend
+          context: .
           file: ./whatsapp-backend/Dockerfile
           push: false
           tags: prochat-backend:latest
@@ -63,7 +63,7 @@ jobs:
       - name: Build Dashboard UI Docker artifact (NextStandalone)
         uses: docker/build-push-action@v5
         with:
-          context: ./whatsapp-dashboard
+          context: .
           file: ./whatsapp-dashboard/Dockerfile
           push: false
           tags: prochat-dashboard:latest

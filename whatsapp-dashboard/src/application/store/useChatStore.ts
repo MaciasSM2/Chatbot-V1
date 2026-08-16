@@ -3,7 +3,7 @@ import { executeSecureRequest } from '../../core/apiClient';
 
 export interface IUiMessage {
   id: string;
-  sender: 'CLIENT' | 'BOT' | 'AGENT';
+  sender: 'user' | 'bot' | 'system';
   text: string;
   timestamp: string;
 }
@@ -72,8 +72,11 @@ export const useChatStore = create<IChatStore>((set, get) => ({
 
   setActiveChatPhone: (phone: string) => {
     if (typeof window === 'undefined') return;
-    const cachedDbRaw = localStorage.getItem(`sim_db:${phone}`);
-    const hydratedMessages: IUiMessage[] = cachedDbRaw ? JSON.parse(cachedDbRaw) : [];
+    let hydratedMessages: IUiMessage[] = [];
+    try {
+      const cachedDbRaw = localStorage.getItem(`sim_db:${phone}`);
+      if (cachedDbRaw) hydratedMessages = JSON.parse(cachedDbRaw);
+    } catch {}
 
     set({ activeChatPhone: phone, activeChatId: phone, messagesTimeline: hydratedMessages, messages: hydratedMessages });
   },
@@ -84,7 +87,7 @@ export const useChatStore = create<IChatStore>((set, get) => ({
 
     const userNode: IUiMessage = {
       id: `MSG-USER-${Date.now()}`,
-      sender: 'CLIENT',
+      sender: 'user',
       text: userText.trim(),
       timestamp: new Date().toISOString()
     };
@@ -105,15 +108,15 @@ export const useChatStore = create<IChatStore>((set, get) => ({
     if (networkResult.success && networkResult.data?.responseMessage !== 'CONTROL_HUMANO_ACTIVO') {
       const botResponseNode: IUiMessage = {
         id: `MSG-BOT-${Date.now()}`,
-        sender: 'BOT',
-        text: networkResult.data.responseMessage,
-        timestamp: networkResult.data.timestamp || new Date().toISOString()
+        sender: 'bot',
+        text: networkResult.data?.responseMessage || '',
+        timestamp: networkResult.data?.timestamp || new Date().toISOString()
       };
       finalTimeline.push(botResponseNode);
     } else if (!networkResult.success) {
       finalTimeline.push({
         id: `MSG-ERR-${Date.now()}`,
-        sender: 'BOT',
+        sender: 'bot',
         text: `Error del Servidor: ${networkResult.error}`,
         timestamp: new Date().toISOString()
       });
@@ -123,7 +126,7 @@ export const useChatStore = create<IChatStore>((set, get) => ({
       finalTimeline = finalTimeline.slice(finalTimeline.length - MAX_STORAGE_MESSAGES);
     }
 
-    localStorage.setItem(`sim_db:${currentPhone}`, JSON.stringify(finalTimeline));
+    try { localStorage.setItem(`sim_db:${currentPhone}`, JSON.stringify(finalTimeline)); } catch {}
     set({ messagesTimeline: finalTimeline, messages: finalTimeline, isSendingPayload: false });
   },
 
@@ -141,15 +144,68 @@ export const useChatStore = create<IChatStore>((set, get) => ({
       get().setActiveChatPhone(phone);
     }
   },
-  initSocket: (_chatId: string) => { /* no-op — socket handled by useSocketStore */ },
-  triggerStressTest: () => { /* no-op */ },
-  startForcedConversation: async (_phone: string, _config?: any) => { /* no-op */ },
+  initSocket: (_chatId: string) => { /* socket handled by useSocketStore */ },
+  triggerStressTest: () => { console.warn('StressTest: backend StressTester eliminado — stub inactivo'); },
+  startForcedConversation: async (phone: string, config?: any) => {
+    const currentPhone = get().activeChatPhone;
+    if (!currentPhone) return;
+    const payload = {
+      phone: currentPhone,
+      text: config?.category === 'INITIATION' ? 'Hola' : 'Continuar',
+      ...(config || {})
+    };
+    const res = await executeSecureRequest('/simulator/scenario', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    if (res.success && res.data?.responseMessage) {
+      const botMsg: IUiMessage = {
+        id: `MSG-BOT-${Date.now()}`,
+        sender: 'bot',
+        text: res.data.responseMessage,
+        timestamp: res.data.timestamp || new Date().toISOString()
+      };
+      const updated = [...get().messagesTimeline, botMsg];
+      set({ messagesTimeline: updated, messages: updated });
+    }
+  },
   sendMessage: async (text: string) => {
     await get().sendSimulatedMessage(text);
   },
-  loadActiveChats: async () => { /* no-op */ },
+  loadActiveChats: async () => {
+    try {
+      set({ isLoadingActive: true });
+      const res = await executeSecureRequest('/admin/crm/clients');
+      if (res.success && Array.isArray(res.data)) {
+        const mapped = res.data.map((c: any, i: number) => ({
+          id: String(i + 1),
+          phone: c.phone_number || c.phone || '',
+          name: c.full_name || c.clientName || c.phone || '',
+          userId: c.phone_number || c.phone || '',
+          clientName: c.full_name || c.clientName || '',
+          isRegistered: !!c.is_registered,
+          isPaused: !!c.is_paused,
+          metadata: c.metadata || {},
+          currentStep: c.current_step || 'WELCOME',
+          lastMessageTime: c.last_message_time || c.updated_at || null,
+          lastMessageText: c.last_message_text || null,
+        }));
+        set({ activeChats: mapped, isLoadingActive: false });
+      } else {
+        set({ isLoadingActive: false });
+      }
+    } catch {
+      set({ isLoadingActive: false });
+    }
+  },
   resetChat: (_chatId?: string) => get().clearLocalHistory(),
-  searchMessages: (query: string) => { console.log(`Buscando localmente: ${query}`); },
+  searchMessages: (query: string) => {
+    const { messagesTimeline } = get();
+    if (!query.trim()) return;
+    const lower = query.toLowerCase();
+    const found = messagesTimeline.filter(m => m.text.toLowerCase().includes(lower));
+    console.log(`Busqueda local: ${found.length} resultados para "${query}"`);
+  },
   toggleFullScreen: () => set((state) => ({ isFullScreen: !state.isFullScreen })),
   setIsConfiguring: (state: boolean | ((prev: boolean) => boolean)) => {
     if (typeof state === 'function') {

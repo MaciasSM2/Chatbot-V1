@@ -3,16 +3,25 @@
  * @description Botón animado para alternar entre modo claro y oscuro.
  * Usa `mounted` para evitar hydration mismatch en Next.js SSR.
  */
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, MessageSquare, LogOut } from 'lucide-react';
 import { useTheme } from '../application/providers/ThemeContext';
 
 export function TopBar({ operatorEmail }: { operatorEmail: string }) {
   return (
     <header className="h-16 border-b border-border-subtle bg-bg-panel/75 backdrop-blur-md px-6 flex items-center justify-between shrink-0">
       <div className="flex items-center gap-3">
-        <span className="text-[11px] font-mono text-text-muted tracking-wider">
-          {operatorEmail}
-        </span>
+        <a
+          href="/"
+          className="flex items-center gap-2 px-3.5 py-1.5 bg-[var(--theme-accent)]/10 hover:bg-[var(--theme-accent)]/20 text-[var(--theme-accent)] border border-[var(--theme-accent)]/30 rounded-xl text-xs font-bold transition-all shadow-sm group"
+        >
+          <MessageSquare className="w-4 h-4 text-[var(--theme-accent)] group-hover:-translate-x-0.5 transition-transform" />
+          <span>💬 Volver a Chats (Simulador Principal)</span>
+        </a>
+        {operatorEmail && (
+          <span className="text-[11px] font-mono text-text-muted tracking-wider hidden md:inline-block">
+            {operatorEmail}
+          </span>
+        )}
       </div>
       <div className="flex items-center gap-4">
         <ThemeSwitcher />

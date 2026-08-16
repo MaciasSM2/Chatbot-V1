@@ -32,7 +32,7 @@ export class MySQLClientRepository implements IClientRepository {
   private readonly SECRET_KEY: Buffer;
 
   constructor(private readonly dbPool: Pool) {
-    const rawSecret = process.env.JWT_SECRET || 'fallback_secret_key_must_be_32_bytes_long_2026!';
+    const rawSecret = process.env.JWT_SECRET || '';
     this.SECRET_KEY = crypto.scryptSync(rawSecret, 'salt_colombia_logistica', 32);
   }
 

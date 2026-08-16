@@ -13,10 +13,14 @@ export const useSocketStore = create<SocketState>((set, get) => ({
   establishLiveConnection: () => {
     const existing = get().socket;
     if (existing?.connected) return existing;
+    if (existing) {
+      existing.removeAllListeners();
+      existing.disconnect();
+    }
 
     const socketUrl = typeof window !== 'undefined'
-      ? window.location.origin
-      : 'http://whatsapp-backend:3000';
+      ? (process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin)
+      : (process.env.NEXT_PUBLIC_SOCKET_URL || 'http://whatsapp-backend:3014');
 
     const socket: Socket = io(socketUrl, {
       path: '/socket.io/',

@@ -18,18 +18,18 @@ export class AnalyticsController {
    * GET /api/analytics/traffic
    * Provee los set de datos agregados para alimentar las gráficas de Recharts en el inicio.
    */
-  public async getDashboardMetrics(_req: Request, res: Response): Promise<Response> {
+  public async getDashboardMetrics(_req: Request, res: Response): Promise<void> {
     try {
       const volume = await this.statsService.getDailyMessageVolume();
       const funnel = await this.statsService.getFsmFunnelStats();
 
-      return res.status(200).json({
+      res.status(200).json({
         success: true,
         data: { volume, funnel }
       } as ApiResponse<DashboardMetricsData>);
     } catch (error: any) {
       console.error(`❌ [AnalyticsController] Fallo relacional: ${error.message}`);
-      return res.status(500).json({ 
+      res.status(500).json({ 
         success: false, 
         error: 'Error de sintaxis interna al compilar estadísticas desde MariaDB.' 
       } as ApiResponse);
@@ -40,13 +40,13 @@ export class AnalyticsController {
    * GET /api/analytics/summary
    * Retorna las métricas del tablero analítico para el inicio del operador.
    */
-  public async getSummaryStats(_req: Request, res: Response): Promise<Response> {
+  public async getSummaryStats(_req: Request, res: Response): Promise<void> {
     try {
       const metrics = await this.statsService.getSummaryStats();
-      return res.status(200).json({ success: true, metrics });
+      res.status(200).json({ success: true, metrics });
     } catch (error: any) {
       console.error(`❌ [AnalyticsController] Fallo en summary: ${error.message}`);
-      return res.status(500).json({ 
+      res.status(500).json({ 
         success: false, 
         error: 'Error de sintaxis interna al compilar resumen analítico.' 
       } as ApiResponse);

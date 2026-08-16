@@ -27,11 +27,11 @@ export function ClientTable({ clients, isLoading, onMutationRequired }: ClientTa
   }
 
   return (
-    <div className="bg-[#0b0c0d] border border-[var(--border-subtle)] rounded-[2rem] overflow-hidden shadow-2xl">
+    <div className="bg-bg-card border border-border-subtle rounded-[2rem] overflow-hidden shadow-2xl">
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-[var(--border-subtle)] bg-[#141617]/50 text-[10px] font-black uppercase tracking-widest text-text-muted">
+            <tr className="border-b border-border-subtle bg-bg-header/50 text-[10px] font-black uppercase tracking-widest text-text-muted">
               <th className="px-6 py-4">Identificador Telefónico</th>
               <th className="px-6 py-4">Nombre Completo</th>
               <th className="px-6 py-4 text-center">Género</th>
@@ -40,14 +40,14 @@ export function ClientTable({ clients, isLoading, onMutationRequired }: ClientTa
               <th className="px-6 py-4 text-right">Documentación Fiscal</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#141617]">
+          <tbody className="divide-y divide-border-subtle">
             {clients.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-6 py-12 text-center text-text-muted font-mono">No se encontraron prospectos mapeados bajo los criterios indicados.</td>
               </tr>
             ) : (
               clients.map((client) => (
-                <tr key={client.phone_number} className="hover:bg-[#141617]/30 transition-colors group">
+                <tr key={client.phone_number} className="hover:bg-bg-card-hover/50 transition-colors group">
                   <td className="px-6 py-4 font-mono font-bold text-brand-primary">{client.phone_number}</td>
                   <td className="px-6 py-4 font-medium text-text-main">{client.full_name || <span className="text-text-muted italic">Captura Silenciosa</span>}</td>
                   <td className="px-6 py-4 text-center">

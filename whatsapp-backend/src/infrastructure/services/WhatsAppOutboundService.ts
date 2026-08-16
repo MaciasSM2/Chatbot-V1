@@ -17,7 +17,7 @@ export class WhatsAppOutboundService implements IWhatsAppOutboundService {
     private readonly fallbackService: CorporateFallbackService,
     private readonly phoneIdFromEnv: string
   ) {
-    this.ACCESS_TOKEN = process.env.WA_ACCESS_TOKEN || 'fallback_meta_token_secure_2026';
+    this.ACCESS_TOKEN = process.env.WA_ACCESS_TOKEN || '';
     this.META_GRAPH_URL = `https://graph.facebook.com/v21.0/${this.phoneIdFromEnv}/messages`;
   }
 

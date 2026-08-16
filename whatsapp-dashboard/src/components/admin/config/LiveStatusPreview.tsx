@@ -33,13 +33,9 @@ export const LiveStatusPreview = ({ periods: initialPeriods }: { periods?: any }
     if (!initialPeriods) {
       const fetchTimePeriods = async () => {
         try {
-          try {
-            const result: any = await executeSecureRequest(`${getApiUrl()}/settings/time-periods`);
-            if (result && result.EARLY_MORNING) {
-              setPeriods(result);
-            }
-          } catch (error) {
-            console.error('Error fetching periods in LiveStatusPreview:', error);
+          const result: any = await executeSecureRequest(`${getApiUrl()}/admin/settings/time-periods`);
+          if (result && result.EARLY_MORNING) {
+            setPeriods(result);
           }
         } catch (error) {
           console.error('Error fetching periods in LiveStatusPreview:', error);

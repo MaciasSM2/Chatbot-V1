@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import { AppContainer } from './infrastructure/containers/AppContainer';
 import { ExpressServer } from './infrastructure/server/ExpressServer';
 import logger from './infrastructure/logging/Logger';
+import Redis from 'ioredis';
 
 dotenv.config();
 
@@ -50,12 +51,14 @@ class ApplicationBootstrap {
     try {
       const mysql = await import('mysql2/promise');
       const dbPassword = process.env.DB_PASSWORD ?? '';
+      const dbUser = process.env.DB_USER || 'bot_orchestrator';
+      const dbName = process.env.DB_NAME || 'chatbot_crm_db';
       const pool = mysql.createPool({
         host: process.env.DB_HOST || '127.0.0.1',
         port: Number(process.env.DB_PORT) || 3306,
-        user: process.env.DB_USER || 'prochat_admin',
+        user: dbUser,
         password: dbPassword,
-        database: process.env.DB_NAME || 'chatbot_crm_db',
+        database: dbName,
         connectionLimit: 2,
         connectTimeout: 5000
       });
@@ -74,7 +77,6 @@ class ApplicationBootstrap {
    */
   private async checkRedisConnectivity(): Promise<boolean> {
     try {
-      const Redis = (await import('ioredis')).default;
       const client = new Redis({
         host: process.env.REDIS_HOST || '127.0.0.1',
         port: Number(process.env.REDIS_PORT) || 6379,
@@ -83,6 +85,7 @@ class ApplicationBootstrap {
         lazyConnect: true,
         maxRetriesPerRequest: 1
       });
+      client.on('error', () => {});
       await client.connect();
       const pong = await client.ping();
       await client.quit();

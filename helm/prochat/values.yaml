@@ -1,0 +1,86 @@
+# ==============================================================================
+# VALORES DE CONFIGURACIÓN PARAMETRIZABLES PARA PROCHAT DEPLOYMENT
+# ==============================================================================
+
+# Configuración Global de Inquilino/Ambiente
+global:
+  environment: production
+  replicaCount:
+    backend: 2
+    dashboard: 2
+
+# Configuración del Backend Express 5
+backend:
+  image:
+    repository: prochat-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3014
+  resources:
+    limits:
+      cpu: "750m"
+      memory: "512Mi"
+    requests:
+      cpu: "250m"
+      memory: "256Mi"
+  hpa:
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 75
+
+# Configuración del Dashboard Next.js Standalone
+dashboard:
+  image:
+    repository: prochat-dashboard
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3015
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+
+# Variables de Entorno no sensibles (ConfigMap)
+config:
+  dbHost: mariadb-server
+  dbPort: 3306
+  dbName: chatbot_db
+  dbUser: prochat_admin
+  redisHost: redis-server
+  redisPort: 6379
+  waVerifyToken: prochat_handshake_token_default
+
+# Secretos y Credenciales Cifradas (Secret)
+secrets:
+  jwtSecret: "test_jwt_secret_key_minimum_32_characters_long"
+  masterEncryptionKey: "e8f902a34b12c8567123456789abcdef0123456789abcdef0123456789abcdef"
+  dbPassword: "root_db_password_prod_secure_2026"
+  redisPassword: "redis_auth_password_prod_secure_2026"
+
+# Ruteo Perimetral Ingress
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: prochat.io
+      paths:
+        - path: /
+          pathType: Prefix
+          backendType: dashboard
+        - path: /api
+          pathType: Prefix
+          backendType: backend
+        - path: /webhook
+          pathType: Prefix
+          backendType: backend
+  tls: []
+  #  - secretName: prochat-tls
+  #    hosts:
+  #      - prochat.io

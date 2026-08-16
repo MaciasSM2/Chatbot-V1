@@ -3,6 +3,7 @@
  * @description Patrón de diseño estructural para prevenir fallos en cascada en servicios de IA/Bases de datos.
  */
 import { ICircuitBreaker } from '../../core/interfaces/resilience/ICircuitBreaker';
+import logger from '../logging/Logger';
 
 enum CircuitState {
   CLOSED,    // Operación normal: el tráfico fluye
@@ -14,6 +15,7 @@ export class AdvancedCircuitBreaker implements ICircuitBreaker {
   private state: CircuitState = CircuitState.CLOSED;
   private failureCount: number = 0;
   private nextAttemptTimestamp: number = 0;
+  private probing: boolean = false;
 
   // Parámetros de umbral configurables (Inyección por constructor - OCP)
   constructor(
@@ -36,8 +38,16 @@ export class AdvancedCircuitBreaker implements ICircuitBreaker {
     this.evaluateState();
 
     if (this.state === CircuitState.OPEN) {
-      console.warn('⚠️ [CircuitBreaker] Circuito ABIERTO. Derivando flujo al Fallback Strategy.');
+      logger.warn('[CircuitBreaker] Circuito ABIERTO. Derivando flujo al Fallback Strategy.');
       return fallbackAction();
+    }
+
+    if (this.state === CircuitState.HALF_OPEN) {
+      if (this.probing) {
+        logger.warn('[CircuitBreaker] HALF_OPEN con probe activo. Derivando al Fallback.');
+        return fallbackAction();
+      }
+      this.probing = true;
     }
 
     try {
@@ -55,7 +65,8 @@ export class AdvancedCircuitBreaker implements ICircuitBreaker {
   private evaluateState(): void {
     if (this.state === CircuitState.OPEN && Date.now() > this.nextAttemptTimestamp) {
       this.state = CircuitState.HALF_OPEN;
-      console.log('🔄 [CircuitBreaker] Pasando a estado HALF_OPEN. Probando salud del servicio.');
+      this.probing = false;
+      logger.info('[CircuitBreaker] Pasando a estado HALF_OPEN. Probando salud del servicio.');
     }
   }
 
@@ -64,12 +75,13 @@ export class AdvancedCircuitBreaker implements ICircuitBreaker {
    */
   private async handleFailure<T>(fallbackAction: () => Promise<T>): Promise<T> {
     this.failureCount++;
-    console.error(`❌ [CircuitBreaker] Fallo registrado (${this.failureCount}/${this.failureThreshold}).`);
+    this.probing = false;
+    logger.error(`[CircuitBreaker] Fallo registrado (${this.failureCount}/${this.failureThreshold}).`);
 
     if (this.failureCount >= this.failureThreshold || this.state === CircuitState.HALF_OPEN) {
       this.state = CircuitState.OPEN;
       this.nextAttemptTimestamp = Date.now() + this.recoveryTimeoutMs;
-      console.error('🚨 [CircuitBreaker] Umbral crítico alcanzado. Circuito ABIERTO temporalmente.');
+      logger.error('[CircuitBreaker] Umbral crítico alcanzado. Circuito ABIERTO temporalmente.');
     }
 
     return fallbackAction();
@@ -78,5 +90,6 @@ export class AdvancedCircuitBreaker implements ICircuitBreaker {
   private resetCounter(): void {
     this.failureCount = 0;
     this.state = CircuitState.CLOSED;
+    this.probing = false;
   }
 }

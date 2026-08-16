@@ -3,23 +3,22 @@
  * @description Suite de pruebas unitarias con dobles de prueba (Mocks).
  */
 import { BrandPromptService } from '../../core/services/BrandPromptService';
-import { IBrandRepository } from '../../core/interfaces/repositories/IBrandRepository';
-import { ICircuitBreaker } from '../../core/interfaces/resilience/ICircuitBreaker';
 import { BrandConfig } from '../../core/entities/BrandConfig';
 
 describe('🧠 BrandPromptService - Unit Test Suite', () => {
   
   // Mock de datos válidos de MariaDB
-  const mockDbConfig: BrandConfig = {
-    id: 'MAIN_CONFIG',
-    companyName: 'Libros Medellín Test',
-    companySlogan: 'Cultura en movimiento',
-    companyLogoUrl: 'http://test.com/logo.png',
-    institutionalLanguage: 'Hablar con tono formal.',
-    startWorkHour: '08:00',
-    endWorkHour: '18:00',
-    operationMode: 1
-  };
+  const mockDbConfig = new BrandConfig(
+    'MAIN_CONFIG',
+    'Libros Medellín Test',
+    'Cultura en movimiento',
+    'Hablar con tono formal.',
+    'http://test.com/logo.png',
+    '08:00',
+    '18:00',
+    1,
+    'WHATSAPP_GREEN'
+  );
 
   it('debería compilar el System Prompt reemplazando tokens correctamente', async () => {
     // Arreglar (Setup Mocks con SOLID - D)
@@ -54,7 +53,7 @@ describe('🧠 BrandPromptService - Unit Test Suite', () => {
 
     // El Circuit Breaker detecta el fallo y desvía la ejecución al segundo parámetro (fallbackAction)
     const mockBreaker: any = {
-      execute: jest.fn().mockImplementation((action, fallbackAction) => fallbackAction())
+      execute: jest.fn().mockImplementation((_action, fallbackAction) => fallbackAction())
     };
 
     const service = new BrandPromptService(mockRepo, mockBreaker);
@@ -67,3 +66,4 @@ describe('🧠 BrandPromptService - Unit Test Suite', () => {
     expect(finalPrompt).not.toContain('Pool connection timeout'); // No expone el error técnico
   });
 });
+

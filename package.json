@@ -1,8 +1,20 @@
 {
-  "name": "chatbot-modulo-saludo",
+  "name": "prochat-monorepo",
+  "version": "2.0.0",
   "private": true,
+  "description": "Plataforma empresarial de chat automatizado, orquestación FSM y simulación multi-motor",
   "workspaces": [
     "whatsapp-backend",
     "whatsapp-dashboard"
-  ]
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspace=whatsapp-backend",
+    "dev:backend": "npm run dev --workspace=whatsapp-backend",
+    "dev:dashboard": "npm run dev --workspace=whatsapp-dashboard"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
 }

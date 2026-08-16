@@ -3,6 +3,7 @@ import { HybridSessionRepository } from '../../providers/database/HybridSessionR
 import { PromptInjectionGuard } from './PromptInjectionGuard';
 import { SiceTacLiquidationEngine } from './SiceTacLiquidationEngine';
 import { WhatsAppOutboundService } from '../../infrastructure/services/WhatsAppOutboundService';
+import { ChatSession } from '../entities/ChatSession';
 import { EventBus } from '../domain/events/EventBus';
 import logger from '../../infrastructure/logging/Logger';
 
@@ -49,7 +50,7 @@ export class UnifiedChatbotOrchestrator {
     let session = await this.sessionRepository.findByUserId(clientPhone);
 
     if (!session) {
-      session = new (require('../entities/ChatSession').ChatSession)({
+      session = new ChatSession({
         userId: clientPhone,
         currentStep: BotState.WELCOME,
         updatedAt: new Date()

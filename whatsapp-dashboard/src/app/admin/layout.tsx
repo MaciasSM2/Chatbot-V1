@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Sidebar } from '../../components/layout/Sidebar';
-import { TopBar } from '../../components/ThemeSwitcher';
+import { WhatsAppPanelLayout } from '../../components/layout/whatsapp/WhatsAppPanelLayout';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   constructor(props: { children: React.ReactNode }) {
@@ -15,7 +14,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#0b0c0d] flex flex-col items-center justify-center font-mono text-[11px] text-red-400 tracking-widest p-8">
+        <div className="min-h-screen bg-[#0b141a] flex flex-col items-center justify-center font-mono text-[11px] text-red-400 tracking-widest p-8">
           <div className="text-lg mb-4">&gt; CRASH RECOVERY</div>
           <pre className="text-red-300/60 max-w-xl text-center">{this.state.error?.message}</pre>
           <button
@@ -34,15 +33,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <ErrorBoundary>
-      <div className="flex h-screen w-screen overflow-hidden bg-background-main text-text-main transition-colors duration-300">
-        <Sidebar operatorRole="OPERATOR" />
-        <div className="flex flex-col flex-1 h-full overflow-hidden">
-          <TopBar operatorEmail="" />
-          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background-subtle p-6 animate-in fade-in duration-200">
-            {children}
-          </main>
-        </div>
-      </div>
+      <WhatsAppPanelLayout userRole="DEVELOPER" />
     </ErrorBoundary>
   );
 }

@@ -24,6 +24,7 @@ import { TransportLiquidationService } from '../../core/services/TransportLiquid
 import { WelcomeOrchestrator } from '../../core/services/WelcomeOrchestrator';
 import { ModuleSettingsService } from '../../core/services/ModuleSettingsService';
 import { EnqueueMessageUseCase } from '../../core/usecases/EnqueueMessageUseCase';
+import { ConfigurationBroadcaster } from '../../core/events/ConfigurationBroadcaster';
 
 import { dbPool } from '../database/MySQLConnection';
 import { setupUnifiedDatabase } from '../database/setup-db';
@@ -35,8 +36,7 @@ import { MySQLMessageRepository } from '../../providers/database/MySQLMessageRep
 import { MySQLInvoiceRepository } from '../../providers/database/MySQLInvoiceRepository';
 import { MySQLSicetacRepository } from '../../providers/database/MySQLSicetacRepository';
 import { ColombiaHolidayProvider } from '../providers/ColombiaHolidayProvider';
-import { MetaWhatsAppGateway } from '../../infrastructure/gateways/MetaWhatsAppGateway';
-import { MockWhatsAppGateway } from '../../infrastructure/gateways/MockWhatsAppGateway';
+
 import { HolidaySyncScheduler } from '../schedulers/HolidaySyncScheduler';
 import { OutboundRetryScheduler } from '../schedulers/OutboundRetryScheduler';
 
@@ -48,7 +48,56 @@ import { HealthController } from '../../interfaces/http/controllers/HealthContro
 import { AnalyticsController } from '../../interfaces/http/controllers/AnalyticsController';
 import { ModuleSettingsController } from '../../interfaces/http/controllers/ModuleSettingsController';
 import { TimePeriodsController } from '../../interfaces/http/controllers/TimePeriodsController';
+import { BillingController } from '../../interfaces/http/controllers/BillingController';
+import { CalendarController } from '../../interfaces/http/controllers/CalendarController';
 import { MainRouter } from '../../interfaces/http/routes/MainRouter';
+import { MySQLTenantRepository } from '../database/repositories/MySQLTenantRepository';
+import { JsRuleBotStrategy } from '../../core/domain/strategies/JsRuleBotStrategy';
+import { HybridBotStrategy } from '../../core/domain/strategies/HybridBotStrategy';
+import { FullAiBotStrategy } from '../../core/domain/strategies/FullAiBotStrategy';
+import { CavemanTokenOptimizer } from '../../core/services/CavemanTokenOptimizer';
+import { MultiChatOrchestrator } from '../../core/services/MultiChatOrchestrator';
+import { MultiChatController } from '../../interfaces/http/controllers/MultiChatController';
+import { TenantSettingsController } from '../../interfaces/http/controllers/TenantSettingsController';
+import { TenantSecurityService } from '../../core/services/TenantSecurityService';
+import { AuthTenantController } from '../../interfaces/http/controllers/AuthTenantController';
+import { TenantDocumentController } from '../../interfaces/http/controllers/TenantDocumentController';
+import { HybridSettingsController } from '../../interfaces/http/controllers/HybridSettingsController';
+import { WidgetController } from '../../interfaces/http/controllers/WidgetController';
+import { QuotaSettingsController } from '../../interfaces/http/controllers/QuotaSettingsController';
+import { DatabaseBackupDaemon } from '../schedulers/DatabaseBackupDaemon';
+
+class MockQueue {
+  public readonly isMock = true;
+  async getActiveCount() { return 0; }
+  async getWaitingCount() { return 0; }
+  async getDelayedCount() { return 0; }
+  async getFailedCount() { return 0; }
+  async getCompletedCount() { return 0; }
+  async clean() { return []; }
+  async add(_name: string, data: any, _opts?: any) {
+    const container = AppContainer.getInstance();
+    const chatbotOrchestrator = container.chatbotOrchestrator;
+    const correlationId = data?.metadata?.correlationId || `MOCK-${Date.now()}`;
+    
+    setImmediate(async () => {
+      try {
+        if (chatbotOrchestrator) {
+          await chatbotOrchestrator.handleMessage({
+            clientPhone: data?.from || data?.userId || 'unknown',
+            messageText: data?.text?.body || data?.messageBody || '',
+            isSimulation: false,
+            correlationId
+          });
+        }
+      } catch (err: any) {
+        logger.error(`[MockQueue Error] Failed to process message: ${err.message}`, { correlationId });
+      }
+    });
+
+    return { id: `mock-job-${Date.now()}` };
+  }
+}
 
 export class AppContainer {
   private static instance: AppContainer | null = null;
@@ -93,6 +142,17 @@ export class AppContainer {
   public analyticsController!: AnalyticsController;
   public moduleController!: ModuleSettingsController;
   public timePeriodsController!: TimePeriodsController;
+  public billingController!: BillingController;
+  public calendarController!: CalendarController;
+  public tenantRepository!: MySQLTenantRepository;
+  public multiChatOrchestrator!: MultiChatOrchestrator;
+  public multiChatController!: MultiChatController;
+  public tenantSettingsController!: TenantSettingsController;
+  public authTenantController!: any;
+  public tenantDocumentController!: any;
+  public hybridSettingsController!: any;
+  public widgetController!: any;
+  public quotaSettingsController!: any;
 
   private constructor() {}
 
@@ -125,17 +185,29 @@ export class AppContainer {
         host: process.env.REDIS_HOST || '127.0.0.1',
         port: Number(process.env.REDIS_PORT) || 6379,
         password: process.env.REDIS_PASSWORD || undefined,
-        lazyConnect: true
+        lazyConnect: true,
+        maxRetriesPerRequest: process.env.NODE_ENV === 'test' ? 0 : 20
+      });
+
+      // Registrar listener de errores para evitar que se caiga la app si no hay Redis local
+      this.redisClient.on('error', (err) => {
+        // Silencioso o warning si se espera que no haya Redis
+        logger.debug(`[Redis] Error en cliente: ${err.message}`);
       });
 
       // Verificar conectividad Redis (Fail-Fast)
       if (redisConnected) {
-        await this.redisClient.ping();
-        logger.info('Redis cluster verified.');
+        try {
+          await this.redisClient.ping();
+          logger.info('Redis cluster verified.');
+        } catch (pingErr: any) {
+          logger.warn(`Redis connection ping failed: ${pingErr.message}`);
+          redisConnected = false;
+        }
       }
 
-      const isRedisActive = process.env.USE_REDIS !== 'false';
-      this.messageQueue = isRedisActive ? new Queue('process-whatsapp-message', { connection: this.redisClient }) : null;
+      const isRedisActive = process.env.USE_REDIS !== 'false' && redisConnected;
+      this.messageQueue = isRedisActive ? new Queue('process-whatsapp-message', { connection: this.redisClient }) : new MockQueue() as any;
 
       // B. Ejecutar auto-migración DDL — modo graceful: si MariaDB no disponible, continuar en modo demo
       try {
@@ -149,13 +221,6 @@ export class AppContainer {
       }
 
       const circuitBreaker = new AdvancedCircuitBreaker(3, 10000);
-
-      process.env.NODE_ENV === 'test' || process.env.USE_MOCK_GATEWAY === 'true'
-        ? new MockWhatsAppGateway()
-        : new MetaWhatsAppGateway(
-            process.env.WA_PHONE_NUMBER_ID || '',
-            process.env.WA_ACCESS_TOKEN || ''
-          );
 
       this.clientRepository = new MySQLClientRepository(this.mariadbPool);
       this.brandRepo = new MySQLBrandRepository(this.mariadbPool);
@@ -222,6 +287,28 @@ export class AppContainer {
       this.analyticsController = new AnalyticsController(this.statsService);
       this.moduleController = new ModuleSettingsController(this.moduleService);
       this.timePeriodsController = new TimePeriodsController(this.dateTimeManager);
+      this.billingController = new BillingController(this.invoiceRepo);
+      this.calendarController = new CalendarController(this.mariadbPool);
+
+      const securityService = new TenantSecurityService();
+      this.tenantRepository = new MySQLTenantRepository(this.mariadbPool, securityService);
+      const cavemanOptimizer = new CavemanTokenOptimizer();
+      const fullJsStrat = new JsRuleBotStrategy(this.welcomeOrchestrator, siceTacEngine, this.tenantRepository);
+      const hybridStrat = new HybridBotStrategy(this.tenantRepository);
+      const fullAiStrat = new FullAiBotStrategy(this.tenantRepository, cavemanOptimizer);
+      this.multiChatOrchestrator = new MultiChatOrchestrator(fullJsStrat, hybridStrat, fullAiStrat);
+      this.multiChatController = new MultiChatController(this.multiChatOrchestrator);
+      this.tenantSettingsController = new TenantSettingsController(this.tenantRepository, ConfigurationBroadcaster.getInstance());
+      this.authTenantController = new AuthTenantController(this.tenantRepository);
+      this.tenantDocumentController = new TenantDocumentController(this.tenantRepository);
+      this.hybridSettingsController = new HybridSettingsController();
+      this.widgetController = new WidgetController(
+        this.tenantRepository,
+        fullJsStrat,
+        hybridStrat,
+        fullAiStrat
+      );
+      this.quotaSettingsController = new QuotaSettingsController();
 
       this.holidaySyncScheduler = new HolidaySyncScheduler(this.mariadbPool);
       this.holidaySyncScheduler.startCronWorker();
@@ -234,7 +321,6 @@ export class AppContainer {
       const cacheWarmUpService = new CacheWarmUpService(this.mariadbPool, this.redisClient);
       cacheWarmUpService.executeWarmUpPipeline();
 
-      const { DatabaseBackupDaemon } = require('../schedulers/DatabaseBackupDaemon');
       const backupDaemon = DatabaseBackupDaemon.getInstance();
       backupDaemon.startAutomatedBackupScheduler();
 
@@ -246,9 +332,15 @@ export class AppContainer {
     }
   }
 
-  public startWorker(_ioInstance: any): void {
+  public startWorker(ioInstance: any): void {
+    if (ioInstance) {
+      ConfigurationBroadcaster.getInstance().initialize(ioInstance);
+    }
+    if (this.messageQueue && (this.messageQueue as any).isMock) {
+      logger.info('Skipping MessageWorker BullMQ consumer daemon (running in standalone/memory mode).');
+      return;
+    }
     try {
-      this.messageWorker = new MessageWorker(this.redisClient, this.chatbotOrchestrator);
       this.messageWorker.startWorkerPipeline();
       logger.info('Async worker pipeline and fallbacks started.');
     } catch (workerErr: any) {

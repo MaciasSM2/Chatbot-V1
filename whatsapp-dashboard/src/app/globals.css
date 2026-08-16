@@ -3,32 +3,34 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Fallbacks de Seguridad Iniciales (Verde Whatsapp predeterminado) */
+  --theme-accent: #25D366;
   --theme-bg-base: #F4F9F5;
   --theme-bg-gradient-end: #FFFFFF;
-  --theme-accent: #25D366;
-  --theme-bubble-user: #E2F4C5;
+  --theme-bg-card: #FFFFFF;
+  --theme-bg-sidebar: #FFFFFF;
+  --theme-bg-card-hover: #f0f5f1;
+  --theme-bg-input: #FFFFFF;
+  --theme-bg-header: #f1f5f9;
+  --theme-icon-bg: rgba(37, 211, 102, 0.10);
+  --theme-kpi-stripe: #25D366;
+  --theme-avatar-bg: #e8f5e9;
+  --theme-bubble-user: rgba(37, 211, 102, 0.15);
   --theme-bubble-bot: #FFFFFF;
+  --theme-border-subtle: #e2e8f0;
+  --theme-border-strong: #cbd5e1;
 
-  /* MODO LUMINOSO (Light Mode) */
-  --bg-main: var(--theme-bg-base);           /* Gris pizarra muy tenue / Base dinámica */
-  --bg-panel: #ffffff;          /* Blanco puro */
-  --bg-header: #f1f5f9;
-  --bg-input: #ffffff;
-  
-  --text-main: #0f172a;         /* Azul muy oscuro para lectura */
-  --text-dim: #64748b;          /* Gris para descripciones */
-  --border-color: rgba(15, 23, 42, 0.15); /* Gris zinc — más visible */
+  --bg-main: var(--theme-bg-base);
+  --bg-panel: var(--theme-bg-card);
+  --bg-header: var(--theme-bg-header);
+  --bg-input: var(--theme-bg-input);
+  --text-main: #0f172a;
+  --text-dim: #64748b;
+  --border-color: rgba(15, 23, 42, 0.15);
   --separator-accent: #e2e8f0;
-  
-  /* Separadores de Alta Visibilidad (Light Mode) */
-  --border-subtle: rgba(20, 22, 23, 0.06);
-  --border-strong: rgba(20, 22, 23, 0.15);
-  
+  --border-subtle: var(--theme-border-subtle);
+  --border-strong: var(--theme-border-strong);
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
   --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
-
-  /* Compatibilidad con variables previas */
   --bg-raised: #f7f8fa;
   --bg-welcome: #efeae2;
   --bubble-bot: var(--theme-bubble-bot);
@@ -38,42 +40,37 @@
   --brand-green-hover: color-mix(in srgb, var(--theme-accent) 85%, #000000);
   --accent-amber: #ffbc2e;
   --status-error: #f15f5f;
-
   --brand-primary: var(--theme-accent);
   --brand-accent: #e2e8f0;
 }
 
 .dark {
-  /* Fallbacks de Seguridad para Modalidad Oscura (Noche Estrellada) */
+  --theme-accent: #25D366;
   --theme-bg-base: #070A0E;
   --theme-bg-gradient-end: #0A2315;
-  --theme-accent: #25D366;
-  --theme-bubble-user: #0A371B;
+  --theme-bg-card: #0d0d0d;
+  --theme-bg-sidebar: #0f1114;
+  --theme-bg-card-hover: #1a1c20;
+  --theme-bg-input: #18191b;
+  --theme-bg-header: #141517;
+  --theme-icon-bg: rgba(37, 211, 102, 0.12);
+  --theme-kpi-stripe: #25D366;
+  --theme-avatar-bg: #0a1f0e;
+  --theme-bubble-user: rgba(37, 211, 102, 0.19);
   --theme-bubble-bot: #141617;
+  --theme-border-subtle: rgba(255, 255, 255, 0.05);
+  --theme-border-strong: rgba(255, 255, 255, 0.15);
 
-  /* Fondo Maestro: Negro absoluto / Base dinámica */
-  --bg-main: var(--theme-bg-base); 
-  
-  /* Paneles: Gris carbón muy oscuro */
-  --bg-panel: #0d0d0d; 
-  
-  /* Celdas, Headers e Inputs: Gris profundo */
-  --bg-header: #141517;
-  --bg-input: #18191b;
-  
-  /* Textos: Blanco humo y gris suave */
+  --bg-main: var(--theme-bg-base);
+  --bg-panel: var(--theme-bg-card);
+  --bg-header: var(--theme-bg-header);
+  --bg-input: var(--theme-bg-input);
   --text-main: #f1f5f9;
   --text-dim: #88929b;
-  
-  /* Bordes: Toque esmeralda para coherencia con identidad del bot */
   --border-color: rgba(16, 185, 129, 0.12);
   --separator-accent: #1e293b;
-  
-  /* Separadores de Alta Visibilidad (Dark Mode) */
-  --border-subtle: rgba(255, 255, 255, 0.05); 
-  --border-strong: rgba(255, 255, 255, 0.15); 
-  
-  /* Compatibilidad con variables previas */
+  --border-subtle: var(--theme-border-subtle);
+  --border-strong: var(--theme-border-strong);
   --bg-raised: #182229;
   --bg-welcome: #050505;
   --bubble-bot: var(--theme-bubble-bot);
@@ -83,23 +80,19 @@
   --brand-green-hover: color-mix(in srgb, var(--theme-accent) 85%, #ffffff);
   --accent-amber: #ffbc2e;
   --status-error: #f15f5f;
-
-  /* Acento WhatsApp */
   --brand-primary: var(--theme-accent);
-  --brand-accent: #1e293b; /* Azul profundo para detalles de selección */
+  --brand-accent: #1e293b;
 }
 
 @theme {
-  --color-brand-primary: #10b981; /* Verde Esmeralda */
-  --color-brand-blue: #1e293b;    /* Azul profundo para selección */
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-blue: #1e293b;
 
-  /* Colores de Marca (Acentos) */
   --color-primary: var(--brand-primary);
-  --color-primary-hover: #059669;
+  --color-primary-hover: var(--brand-primary);
   --color-accent: var(--brand-accent);
 
-  /* Acentos de Marca Unificados (Simulador + Admin) */
-  --color-brand-hover: #059669;
+  --color-brand-hover: var(--brand-primary);
   --color-brand-accent: var(--brand-accent);
   
   /* Mapeo de Variables de Tema */
@@ -137,6 +130,13 @@
   --color-accent-amber: var(--accent-amber);
   --color-status-error: var(--status-error);
   --color-bg-welcome: var(--bg-welcome);
+
+  --color-bg-card: var(--theme-bg-card);
+  --color-bg-sidebar: var(--theme-bg-sidebar);
+  --color-bg-card-hover: var(--theme-bg-card-hover);
+  --color-icon-bg: var(--theme-icon-bg);
+  --color-kpi-stripe: var(--theme-kpi-stripe);
+  --color-avatar-bg: var(--theme-avatar-bg);
   
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

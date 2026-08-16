@@ -1,47 +1,47 @@
-# ──────────────────────────────────────────────────────────────
-# STAGE 1: COMPILADOR Y CONSTRUCTOR DE DEPENDENCIAS (BUILDER)
-# ──────────────────────────────────────────────────────────────
-FROM node:20-alpine AS backend-compiler
+# =================================================─────────────
+# STAGE 1: ETAPA DE COMPILACIÓN (BUILDER)
+# =================================================─────────────
+FROM node:20-alpine AS backend-builder
 
 WORKDIR /usr/src/app
 
-# Copiar manifiestos raíces de workspaces de NPM para aprovechar el caché de capas de Docker
+# Copiar manifiestos raíz para el caché de capas
 COPY package*.json ./
 COPY whatsapp-backend/package*.json ./whatsapp-backend/
 
-# Instalar la totalidad de dependencias incluyendo devDependencies para transpilar TS
+# Instalar dependencias exactas del workspace
 RUN npm ci --workspace=whatsapp-backend
 
-# Traspasar el código fuente relacional del backend
+# Copiar el código fuente del servidor
 COPY whatsapp-backend/ ./whatsapp-backend/
 
-# Ejecutar la transpilación estricta de TypeScript a código nativo ES2022 en la carpeta dist/
 WORKDIR /usr/src/app/whatsapp-backend
+
+# Compilar TypeScript a JavaScript produciendo la carpeta /dist
 RUN npm run build
 
-# Purgar devDependencies instaladas para dejar únicamente los nodos requeridos en runtime
+# Purgar dependencias de desarrollo para aligerar la imagen
 RUN npm prune --production
 
-# ──────────────────────────────────────────────────────────────
-# STAGE 2: ENTORNO DE EJECUCIÓN ENDURECIDO DE PRODUCCIÓN (RUNNER)
-# ──────────────────────────────────────────────────────────────
-FROM node:20-alpine AS backend-production-runner
+# =================================================─────────────
+# STAGE 2: ETAPA DE EJECUCIÓN PRODUCTIVA (RUNNER)
+# =================================================─────────────
+FROM node:20-alpine AS backend-runner
 
 WORKDIR /app
 
-# Inyectar bandera nativa de entorno para optimizaciones internas de V8 / Express 5
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=3014
 
-# Traspasar únicamente el árbol limpio de dependencias y el dist transpilado
-COPY --from=backend-compiler /usr/src/app/whatsapp-backend/node_modules ./node_modules
-COPY --from=backend-compiler /usr/src/app/whatsapp-backend/dist ./dist
-COPY --from=backend-compiler /usr/src/app/whatsapp-backend/package.json ./package.json
+# Traspasar únicamente los artefactos necesarios
+COPY --from=backend-builder /usr/src/app/whatsapp-backend/package*.json ./
+COPY --from=backend-builder /usr/src/app/whatsapp-backend/node_modules ./node_modules
+COPY --from=backend-builder /usr/src/app/whatsapp-backend/dist ./dist
 
-# CORTAFUEGOS DE PRIVILEGIOS: Dropear root y conmutar al usuario sin privilegios por defecto de Alpine
+# Principio de menor privilegio: cambiar a usuario no-root
 USER node
 
-EXPOSE 3000
+EXPOSE 3014
 
-# Disparar la ejecución directamente
+# Comando de arranque optimizado
 CMD ["node", "dist/index.js"]

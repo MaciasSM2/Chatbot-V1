@@ -43,3 +43,10 @@ graphify/
 # Workspace lockfiles (root is canonical)
 whatsapp-backend/package-lock.json
 whatsapp-dashboard/package-lock.json
+
+# Local logs, archives, and build cache
+*.err
+*.tsbuildinfo
+whatsapp-backend/storage/logs/
+whatsapp-backend/storage/backups/
+

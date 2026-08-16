@@ -19,11 +19,11 @@ export const GreetingDashboard: React.FC = () => {
   async function loadAllGreetings() {
     setIsLoading(true);
     try {
-      // Asumimos que al no enviar parámetros, el backend nos devuelve toda la colección
-      const data = await greetingService.getGreetings(); 
-      setGreetings(data);
+      const data = await greetingService.getGreetings();
+      setGreetings(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error cargando los saludos", error);
+      setGreetings([]);
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +89,7 @@ export const GreetingDashboard: React.FC = () => {
           {/* Botón Añadir */}
           <button 
             onClick={handleAddNewBox}
-            className="w-full py-4 mt-4 border-2 border-dashed border-brand-primary text-brand-primary font-bold rounded-xl hover:bg-brand-primary/10 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-4 mt-4 border-2 border-dashed border-[var(--theme-accent)] text-[var(--theme-accent)] font-bold rounded-xl hover:bg-[var(--theme-accent)]/10 transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             <span className="text-xl">+</span> Agregar nueva variante de saludo
           </button>

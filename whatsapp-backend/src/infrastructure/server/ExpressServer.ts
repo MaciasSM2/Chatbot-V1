@@ -16,11 +16,16 @@ import logger from "../logging/Logger";
 import { env } from "../../config/env";
 import { globalErrorHandler, notFoundHandler } from "../../interfaces/http/middlewares/GlobalErrorHandler";
 import { SystemMetricsManager } from "../metrics/Metrics";
+import { BotController } from "../../interfaces/http/controllers/BotController";
 
 export class ExpressServer {
   private readonly app: Express;
   private readonly server: HttpServer;
   private readonly io: SocketIOServer;
+
+  public getExpressInstance(): Express {
+    return this.app;
+  }
 
   constructor(private readonly container: AppContainer) {
     this.app = express();
@@ -58,27 +63,9 @@ export class ExpressServer {
     // 4. Arrancar los workers asíncronos de BullMQ y fallbacks
     this.container.startWorker(this.io);
 
-    // 5. Health check perimetral para pruebas de humo y orquestación
-    const healthHandler = async (_req: any, res: any) => {
-      try {
-        const [rows] = await this.container.mariadbPool.query('SELECT 1 as health_token');
-        const redisOk = await this.container.redisClient.ping();
-        const mariaOk = rows && (rows as any)[0]?.health_token === 1;
-        res.json({
-          success: true,
-          status: mariaOk && redisOk === 'PONG' ? 'HEALTHY' : 'DEGRADED',
-          timestamp: new Date().toISOString(),
-          infrastructure: {
-            mariaDb: mariaOk ? 'OK' : 'DOWN',
-            redis: redisOk === 'PONG' ? 'OK' : 'DOWN'
-          }
-        });
-      } catch {
-        res.json({ success: true, status: 'DEGRADED', timestamp: new Date().toISOString(), infrastructure: { mariaDb: 'DOWN', redis: 'DOWN' } });
-      }
-    };
-    this.app.get('/api/health', healthHandler);
-    this.app.get('/health', healthHandler);
+    // 5. Health check perimetral (via HealthController — MariaDB, Redis, Meta API)
+    this.app.get('/api/health', this.container.healthController.checkSystemVitality);
+    this.app.get('/health', this.container.healthController.checkSystemVitality);
 
     // 6. Montar rutas principales de la aplicación
     const mainRouter = new MainRouter(
@@ -92,7 +79,15 @@ export class ExpressServer {
       this.container.moduleController,
       this.container.analyticsController,
       this.container.timePeriodsController,
-      this.container.redisClient
+      this.container.billingController,
+      this.container.calendarController,
+      this.container.redisClient,
+      this.container.multiChatController,
+      this.container.tenantDocumentController,
+      this.container.hybridSettingsController,
+      this.container.quotaSettingsController,
+      this.container.widgetController,
+      new BotController()
     );
     this.app.use('/api', mainRouter.getRouter());
 

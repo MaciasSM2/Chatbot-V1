@@ -51,15 +51,15 @@ export const useDiagnosticStore = create<DiagnosticState>((set, get) => ({
    * Inicia el bucle de monitoreo cíclico cada 10 segundos.
    */
   startRealtimeMonitoring: () => {
-    if (get().pollingIntervalId) return; // Evitar la duplicación de hilos timers
-    
-    get().fetchVitals(); // Ejecución inmediata de control inicial
+    if (get().pollingIntervalId) return;
     
     const interval = setInterval(() => {
       get().fetchVitals();
     }, 10 * 1000);
 
     set({ pollingIntervalId: interval });
+
+    get().fetchVitals();
   },
 
   /**

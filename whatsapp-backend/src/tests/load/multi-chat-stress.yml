@@ -1,0 +1,26 @@
+config:
+  target: "http://localhost:3014"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Fase de Calentamiento (5 req/sec)"
+    - duration: 60
+      arrivalRate: 20
+      rampTo: 50
+      name: "Pico de Carga Concurrente (50 req/sec)"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Evaluación de Estres sobre el Endpoint Multi-Chat Paralelo"
+    flow:
+      - post:
+          url: "/api/simulator/multi-chat"
+          json:
+            tenantId: "tenant-demo-01"
+            text: "¿Cuál es el costo de un flete de Medellín a Bogotá para un camión Sencillo?"
+            userPhone: "LOAD-TEST-RUNNER"
+          expect:
+            - statusCode: 200
+            - contentType: json

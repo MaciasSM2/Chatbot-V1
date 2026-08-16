@@ -39,18 +39,25 @@ export class RutUploadMiddleware {
       return;
     }
 
+    let limitExceeded = false;
+
     // Escuchar la transmisión reactiva de chunks binarios provenientes de la red WAN
     req.on('data', (chunk: Buffer) => {
       byteCounter += chunk.length;
       
       // BARRERA 1: Cortar la conexión si el payload intenta colapsar el almacenamiento
-      if (byteCounter > this.MAX_SIZE_BYTES) {
+      if (byteCounter > this.MAX_SIZE_BYTES && !limitExceeded) {
+        limitExceeded = true;
         req.destroy(); // Destrucción física inmediata del socket de red
-        res.status(413).json({ success: false, error: 'Exceso de peso: El archivo RUT supera el límite de 5MB.' });
+        if (!res.headersSent) {
+          res.status(413).json({ success: false, error: 'Exceso de peso: El archivo RUT supera el límite de 5MB.' });
+        }
         return;
       }
       
-      fileChunks.push(chunk);
+      if (!limitExceeded) {
+        fileChunks.push(chunk);
+      }
     });
 
     req.on('end', async () => {

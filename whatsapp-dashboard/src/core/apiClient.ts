@@ -1,6 +1,6 @@
 const API_BASE_URL = typeof window !== 'undefined'
   ? '/api'
-  : (process.env.NEXT_PUBLIC_API_URL || 'http://whatsapp-backend:3000/api');
+  : (process.env.NEXT_PUBLIC_API_URL || 'http://whatsapp-backend:3014/api');
 
 export interface IApiResponse<T = any> {
   success: boolean;
@@ -73,7 +73,11 @@ export async function executeSecureRequest<T = any>(
       };
     }
 
-    return { success: true, data: jsonParsed };
+    return jsonParsed && typeof jsonParsed === 'object' && jsonParsed.success === true
+      ? jsonParsed
+      : jsonParsed && typeof jsonParsed === 'object' && 'error' in jsonParsed
+        ? { success: false, error: jsonParsed.error }
+        : { success: true, data: jsonParsed };
 
   } catch (networkError: any) {
     console.error(`🚨 [Network Fail] No se pudo conectar a ${url}:`, networkError);

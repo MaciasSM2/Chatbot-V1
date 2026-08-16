@@ -17,7 +17,7 @@ export class CacheWarmUpService {
     try {
       const [frequentRoutes] = await this.mariadbPool.query<RowDataPacket[]>(
         `SELECT origin_id, destination_id, base_cost, cost_per_ton, peajes_count
-         FROM transport_routes
+         FROM sicetac_routes_matrix
          ORDER BY base_cost DESC LIMIT 50`
       );
 

@@ -97,11 +97,11 @@ export function CSVUploader({ onClose, onUploadSuccess }: CSVUploaderProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#0b0c0d] border border-[var(--border-subtle)] rounded-[2rem] shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in duration-200">
+    <div className="fixed inset-0 bg-bg-card/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-bg-card border border-border-subtle rounded-[2rem] shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in duration-200">
         
         {/* Header */}
-        <div className="p-6 border-b border-[var(--border-subtle)] flex justify-between items-center bg-[#141617]/40">
+        <div className="p-6 border-b border-border-subtle flex justify-between items-center bg-bg-header/40">
           <div>
             <h3 className="text-sm font-black uppercase tracking-wider text-text-main">Cargar Base de Clientes (CSV)</h3>
             <p className="text-[10px] text-text-muted mt-0.5">Importación masiva hacia la base de datos MariaDB.</p>
@@ -109,7 +109,7 @@ export function CSVUploader({ onClose, onUploadSuccess }: CSVUploaderProps) {
           <button
             onClick={onClose}
             type="button"
-            className="p-1.5 hover:bg-[#141617] rounded-xl text-text-muted hover:text-text-main transition-colors cursor-pointer"
+            className="p-1.5 hover:bg-bg-card-hover rounded-xl text-text-muted hover:text-text-main transition-colors cursor-pointer"
           >
             <X size={16} />
           </button>

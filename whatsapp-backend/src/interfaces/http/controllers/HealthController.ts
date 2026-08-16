@@ -6,6 +6,7 @@
 import { Request, Response } from 'express';
 import { Pool } from 'mysql2/promise';
 import Redis from 'ioredis';
+import logger from '../../../infrastructure/logging/Logger';
 
 export class HealthController {
   constructor(
@@ -29,7 +30,7 @@ export class HealthController {
         isMariaDbOk = true;
       }
     } catch (mariaDbError) {
-      console.error('❌ [Health Check Fail] MariaDB inaccesible:', (mariaDbError as Error).message);
+      logger.error('[Health Check Fail] MariaDB inaccesible:', (mariaDbError as Error).message);
     }
 
     // 2. Sondeo Atómico a Redis (Queue Broker Validation)
@@ -39,13 +40,13 @@ export class HealthController {
         isRedisOk = true;
       }
     } catch (redisError) {
-      console.error('❌ [Health Check Fail] Redis inactivo:', (redisError as Error).message);
+      logger.error('[Health Check Fail] Redis inactivo:', (redisError as Error).message);
     }
 
     // 3. Sondeo Atómico a Meta API (WAN Egress Gateway Validation)
     try {
       const abortController = new AbortController();
-      const timeoutId = setTimeout(() => abortController.abort(), 3000); // Límite de 3 segundos
+      const timeoutId = setTimeout(() => abortController.abort(), 3000);
 
       const metaResponse = await fetch('https://graph.facebook.com/v21.0', {
         method: 'HEAD',
@@ -57,12 +58,11 @@ export class HealthController {
         isMetaOk = true;
       }
     } catch (metaNetworkError) {
-      console.error('❌ [Health Check Fail] Meta Cloud API fuera de alcance:', (metaNetworkError as Error).message);
+      logger.error('[Health Check Fail] Meta Cloud API fuera de alcance:', (metaNetworkError as Error).message);
     }
 
-    // Calcular el estado holístico del ecosistema de software
     const isSystemDegraded = !isMariaDbOk || !isRedisOk || !isMetaOk;
-    const responseStatusCode = 200; // Se mantiene 200 para evitar bloqueos en el frontend
+    const responseStatusCode = 200;
 
     res.status(responseStatusCode).json({
       success: true,

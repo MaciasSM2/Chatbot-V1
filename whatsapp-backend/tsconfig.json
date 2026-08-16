@@ -1,33 +1,37 @@
 {
   "compilerOptions": {
-    "rootDir": "./src",
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
     "outDir": "./dist",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "target": "es2022",
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "noImplicitReturns": true,
-    "noImplicitOverride": true,
+    "rootDir": "./src",
+    
+    /* 🛡️ REGLAS ESTRICTAS DE SEGURIDAD EN COMPILACIÓN */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    
+    /* 🔍 ANÁLISIS ESTÁTICO AVANZADO CONTRA ERRORES EN RUNTIME */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "strict": true,
-    "verbatimModuleSyntax": false,
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "skipLibCheck": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    
+    /* ⚙️ INTEROPERABILIDAD Y COMPATIBILIDAD */
     "esModuleInterop": true,
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
   "include": ["src/**/*"],
-  "exclude": [
-    "src/**/*.test.ts",
-    "src/**/*.spec.ts",
-    "node_modules",
-    "dist"
-  ]
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts"]
 }

@@ -17,9 +17,16 @@ export class HolidayManager {
     '2024-12-25': 'NON_WORKABLE',
     '2025-01-01': 'NON_WORKABLE',
     '2026-01-01': 'NON_WORKABLE',
-    '2026-05-22': 'WORKABLE', // Useful for testing as it matches today's date in local time
+    '2026-05-22': 'WORKABLE',
     '2026-12-25': 'NON_WORKABLE',
     '2027-01-01': 'NON_WORKABLE',
+    '2027-12-25': 'NON_WORKABLE',
+    '2028-01-01': 'NON_WORKABLE',
+    '2028-12-25': 'NON_WORKABLE',
+    '2029-01-01': 'NON_WORKABLE',
+    '2029-12-25': 'NON_WORKABLE',
+    '2030-01-01': 'NON_WORKABLE',
+    '2030-12-25': 'NON_WORKABLE',
   };
 
   private readonly holidayProvider?: IHolidayProvider;

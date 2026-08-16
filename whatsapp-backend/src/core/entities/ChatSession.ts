@@ -1,5 +1,5 @@
 export interface IMessageLog {
-  sender: 'bot' | 'user';
+  sender: 'bot' | 'user' | 'system';
   text: string;
   timestamp: number;
 }

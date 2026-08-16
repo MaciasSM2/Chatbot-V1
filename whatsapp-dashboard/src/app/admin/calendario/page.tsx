@@ -69,15 +69,15 @@ export default function CalendarioAdminPage() {
   const dayCellClass = `
     relative h-32 bg-bg-panel p-3 
     transition-all duration-300
-    hover:bg-brand-primary/[0.03] 
+    hover:bg-[var(--theme-accent)]/[0.03] 
     group cursor-pointer flex flex-col justify-between select-none
   `;
 
   const activeDayEffect = `
     before:absolute before:inset-0 
-    before:border before:border-brand-primary 
-    before:shadow-[inset_0_0_15px_rgba(16,185,129,0.1)] 
-    after:absolute after:top-0 after:left-0 after:h-1 after:w-full after:bg-brand-primary
+    before:border before:border-[var(--theme-accent)] 
+    before:shadow-[inset_0_0_15px_var(--theme-accent)] 
+    after:absolute after:top-0 after:left-0 after:h-1 after:w-full after:bg-[var(--theme-accent)]
   `;
 
   const [exceptions, setExceptions] = useState<CalendarException[]>([]);
@@ -264,7 +264,7 @@ export default function CalendarioAdminPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-extrabold text-text-main tracking-tight flex items-center gap-3">
-            <CalendarIcon className="w-8 h-8 text-brand-primary" />
+            <CalendarIcon className="w-8 h-8 text-[var(--theme-accent)]" />
             Gestión del Calendario y Cierres
           </h1>
           <p className="text-text-muted mt-1.5 text-sm max-w-2xl">
@@ -311,7 +311,7 @@ export default function CalendarioAdminPage() {
               </button>
               <button
                 onClick={() => { setCurrentMonth(4); setCurrentYear(2026); }}
-                className="text-xs px-2.5 py-1.5 bg-background-panel text-brand-primary border border-border-subtle font-bold rounded-lg shadow-sm hover:bg-background-header active:scale-95 transition-all"
+                className="text-xs px-2.5 py-1.5 bg-background-panel text-[var(--theme-accent)] border border-border-subtle font-bold rounded-lg shadow-sm hover:bg-background-header active:scale-95 transition-all"
               >
                 Hoy
               </button>
@@ -338,7 +338,7 @@ export default function CalendarioAdminPage() {
           {/* Grid Cells */}
           {isLoading ? (
             <div className="h-96 flex flex-col items-center justify-center gap-3">
-              <Loader2 className="w-10 h-10 animate-spin text-brand-primary" />
+              <Loader2 className="w-10 h-10 animate-spin text-[var(--theme-accent)]" />
               <p className="text-text-muted text-sm">Cargando grilla del mes...</p>
             </div>
           ) : (
@@ -362,7 +362,7 @@ export default function CalendarioAdminPage() {
                     className={`${dayCellClass} ${isToday ? activeDayEffect : ''} ${exc ? `${metadata?.border} border` : ''}`}
                   >
                     <div className="flex items-center justify-between z-10">
-                      <span className={`text-xs font-bold ${isToday ? 'text-brand-primary' : (exc ? metadata?.text : 'text-text-muted')}`}>
+                      <span className={`text-xs font-bold ${isToday ? 'text-[var(--theme-accent)]' : (exc ? metadata?.text : 'text-text-muted')}`}>
                         {day}
                       </span>
                       {exc && (
@@ -379,7 +379,7 @@ export default function CalendarioAdminPage() {
                           <span className={`text-[9px] font-black tracking-wide leading-none truncate max-w-full block py-0.5 rounded ${metadata?.text}`}>
                             {metadata?.label.split(' ')[0]}...
                           </span>
-                          <div className="h-1.5 w-1.5 rounded-full bg-brand-primary shadow-[0_0_8px_#10b981]" />
+                          <div className="h-1.5 w-1.5 rounded-full bg-[var(--theme-accent)] shadow-[0_0_8px_var(--theme-accent)]" />
                         </>
                       ) : (
                         <span className="text-[9px] text-text-muted opacity-0 group-hover:opacity-100 transition-opacity">
@@ -391,7 +391,7 @@ export default function CalendarioAdminPage() {
                     {/* Tooltip on hover */}
                     {exc && (
                       <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 hidden group-hover:block bg-background-panel text-text-main text-[11px] p-2.5 rounded-lg shadow-xl border border-border-subtle z-50 pointer-events-none">
-                        <p className="font-bold text-brand-primary mb-0.5">{metadata?.label}</p>
+                        <p className="font-bold text-[var(--theme-accent)] mb-0.5">{metadata?.label}</p>
                         <p className="text-text-muted">{metadata?.description}</p>
                       </div>
                     )}
@@ -418,10 +418,10 @@ export default function CalendarioAdminPage() {
 
           {/* Context Modal or Quick Action */}
           {selectedDay && (
-            <div className="bg-background-panel rounded-2xl border-2 border-brand-primary p-6 shadow-md transition-all text-text-main">
+            <div className="bg-background-panel rounded-2xl border-2 border-[var(--theme-accent)] p-6 shadow-md transition-all text-text-main">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-extrabold text-lg text-text-main flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-brand-primary animate-pulse" />
+                  <Sparkles className="w-5 h-5 text-[var(--theme-accent)] animate-pulse" />
                   Día Seleccionado
                 </h3>
                 <button 
@@ -443,7 +443,7 @@ export default function CalendarioAdminPage() {
                     </span>
                   </div>
                 ) : (
-                  <p className="text-xs text-brand-primary font-medium mt-1">Día laborable regular (sin excepciones).</p>
+                  <p className="text-xs text-[var(--theme-accent)] font-medium mt-1">Día laborable regular (sin excepciones).</p>
                 )}
               </div>
 
@@ -464,7 +464,7 @@ export default function CalendarioAdminPage() {
                     <select
                       value={formDayType}
                       onChange={(e) => setFormDayType(e.target.value)}
-                      className="w-full bg-background-input border border-border-subtle text-text-main rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                      className="w-full bg-background-input border border-border-subtle text-text-main rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)]"
                     >
                       {Object.entries(DAY_TYPES_METADATA).map(([key, val]) => (
                         <option key={key} value={key} className="bg-background-panel">{val.emoji} {val.label}</option>
@@ -473,7 +473,7 @@ export default function CalendarioAdminPage() {
                   </div>
                   <button
                     onClick={() => handleSaveException()}
-                    className="w-full bg-brand-primary hover:bg-brand-hover text-background-panel font-bold py-2.5 rounded-xl shadow transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+                    className="w-full bg-[var(--theme-accent)] hover:brightness-110 text-background-panel font-bold py-2.5 rounded-xl shadow transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
                     Asignar Regla
@@ -486,7 +486,7 @@ export default function CalendarioAdminPage() {
           {/* Quick Manual Form */}
           <div className="bg-background-panel rounded-2xl border border-border-subtle p-6 shadow-sm">
             <h3 className="font-extrabold text-lg text-text-main mb-4 flex items-center gap-2">
-              <Plus className="w-5 h-5 text-brand-primary" />
+              <Plus className="w-5 h-5 text-[var(--theme-accent)]" />
               Nueva Excepción
             </h3>
             
@@ -497,7 +497,7 @@ export default function CalendarioAdminPage() {
                   type="date"
                   value={formDate}
                   onChange={(e) => setFormDate(e.target.value)}
-                  className="w-full bg-background-input border border-border-subtle text-text-main rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                  className="w-full bg-background-input border border-border-subtle text-text-main rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)]"
                   required
                 />
               </div>
@@ -507,7 +507,7 @@ export default function CalendarioAdminPage() {
                 <select
                   value={formDayType}
                   onChange={(e) => setFormDayType(e.target.value)}
-                  className="w-full bg-background-input border border-border-subtle text-text-main rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                  className="w-full bg-background-input border border-border-subtle text-text-main rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)]"
                 >
                   {Object.entries(DAY_TYPES_METADATA).map(([key, val]) => (
                     <option key={key} value={key} className="bg-background-panel">{val.emoji} {val.label}</option>
@@ -518,7 +518,7 @@ export default function CalendarioAdminPage() {
               <button
                 type="submit"
                 disabled={isSaving}
-                className="w-full bg-brand-primary hover:bg-brand-hover text-background-panel font-bold py-3 rounded-xl transition-all shadow hover:shadow-md disabled:opacity-50 flex items-center justify-center gap-2 text-sm cursor-pointer"
+                className="w-full bg-[var(--theme-accent)] hover:brightness-110 text-background-panel font-bold py-3 rounded-xl transition-all shadow hover:shadow-md disabled:opacity-50 flex items-center justify-center gap-2 text-sm cursor-pointer"
               >
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 Registrar Regla de Día

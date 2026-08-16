@@ -139,6 +139,14 @@ export async function setupUnifiedDatabase(mariadbPool: Pool): Promise<void> {
     `);
 
     await connection.query(`
+      CREATE TABLE IF NOT EXISTS configuraciones_calendario (
+        fecha DATE PRIMARY KEY,
+        tipo_dia VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await connection.query(`
       CREATE TABLE IF NOT EXISTS modulos_sistema (
         id VARCHAR(50) PRIMARY KEY,
         nombre VARCHAR(100) NOT NULL,
@@ -234,8 +242,8 @@ export async function setupUnifiedDatabase(mariadbPool: Pool): Promise<void> {
       ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
     `);
 
-    const rawAdminPassword = process.env.ADMIN_DEFAULT_PASSWORD || 'Secure_Admin_2026!';
-    const jwtSecret = process.env.JWT_SECRET || 'fallback_secret_not_for_prod';
+    const rawAdminPassword = process.env.ADMIN_DEFAULT_PASSWORD || 'Dev_Admin_2026!';
+    const jwtSecret = process.env.JWT_SECRET || '';
     const computedHash = crypto.createHmac('sha256', jwtSecret).update(rawAdminPassword).digest('hex');
 
     await connection.query(`

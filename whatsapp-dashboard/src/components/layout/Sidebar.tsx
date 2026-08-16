@@ -1,13 +1,13 @@
 'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Settings, Users, MessageCircle, Calendar, Lock, FileText, Sun, Moon } from 'lucide-react';
-import { useModuleStore } from '../../application/store/useModuleStore';
+import { LayoutDashboard, MessageSquare, Settings, Users, MessageCircle, Calendar, FileText, Sun, Moon } from 'lucide-react';
 import { useBrandStore } from '../../application/store/useBrandStore';
 
-const activeClass = "bg-brand-primary/10 text-brand-primary border-l-4 border-brand-primary shadow-[15px_0_25px_-10px_rgba(16,185,129,0.2)]";
-const inactiveClass = "text-text-muted hover:bg-white/[0.03] hover:text-brand-primary transition-all duration-300";
+const activeClass = "bg-[var(--theme-accent)]/10 text-[var(--theme-accent)] border-l-4 border-[var(--theme-accent)] shadow-[15px_0_25px_-10px_var(--theme-accent)]/20";
+const inactiveClass = "text-text-muted hover:bg-bg-card-hover hover:text-[var(--theme-accent)] transition-all duration-300";
 
 interface SidebarProps {
   isDark?: boolean;
@@ -19,25 +19,25 @@ interface SidebarProps {
 
 export function Sidebar({ isDark, onToggleTheme, showSimulatorLink = false, simulatorContent }: SidebarProps) {
   const pathname = usePathname();
-  const { modules } = useModuleStore();
   const { settings } = useBrandStore();
 
   const navigation = [
-    { name: 'Inicio', href: '/admin', icon: LayoutDashboard, moduleId: 'dashboard_home' },
-    { name: 'Saludos (Smart)', href: '/admin/saludos', icon: MessageSquare, moduleId: 'module_greetings' },
-    { name: 'Clientes', href: '/admin/clientes', icon: Users, moduleId: 'module_clients' },
+    { name: 'Inicio', href: '/admin', icon: LayoutDashboard },
+    { name: 'Saludos (Smart)', href: '/admin/saludos', icon: MessageSquare },
+    { name: 'Clientes', href: '/admin/clientes', icon: Users },
     { name: 'Calendario', href: '/admin/calendario', icon: Calendar },
     { name: 'Facturacion', href: '/admin/facturacion', icon: FileText },
     { name: 'Configuracion', href: '/admin/configuracion', icon: Settings },
+    { name: 'Volver a los chats', href: '/muestra', icon: MessageCircle },
   ];
 
   return (
-    <div className="w-64 bg-[#070A0E]/80 dark:bg-black/40 border-r border-[var(--border-subtle)] backdrop-blur-md flex flex-col shrink-0 justify-between transition-all duration-300">
+    <div className="w-64 bg-bg-sidebar border-r border-[var(--border-subtle)] backdrop-blur-md flex flex-col shrink-0 justify-between transition-all duration-300">
       <div className="p-6 border-b border-border-subtle">
         {showSimulatorLink && (
-          <Link href="/" className="flex items-center justify-center gap-2 w-full bg-brand-primary hover:bg-brand-hover text-background-panel py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-brand-primary/10 mb-4">
+          <Link href="/muestra" className="flex items-center justify-center gap-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-900/20 mb-4">
             <MessageCircle size={18} />
-            Ver Simulador
+            Volver a los chats
           </Link>
         )}
         {simulatorContent}
@@ -58,32 +58,10 @@ export function Sidebar({ isDark, onToggleTheme, showSimulatorLink = false, simu
         </div>
       </div>
 
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
         {navigation.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-          const isEnabled = item.moduleId
-            ? (modules.find((m: any) => m.id === item.moduleId)?.is_enabled ?? true)
-            : true;
-
-          const Icon = isEnabled ? item.icon : Lock;
-
-          if (!isEnabled) {
-            return (
-              <div
-                key={item.name}
-                className="flex items-center justify-between px-4 py-3 rounded-lg text-text-muted opacity-60 bg-transparent border border-border-subtle/50 cursor-not-allowed select-none transition-all duration-300"
-                title="Este modulo ha sido desactivado por el Administrador"
-              >
-                <div className="flex items-center gap-3">
-                  <Icon size={20} className="text-text-muted/40" />
-                  <span className="font-medium text-sm line-through decoration-border-subtle">{item.name}</span>
-                </div>
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400 font-extrabold tracking-widest uppercase scale-90">
-                  Off
-                </span>
-              </div>
-            );
-          }
+          const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href + '/'));
+          const Icon = item.icon;
 
           return (
             <Link
@@ -104,7 +82,7 @@ export function Sidebar({ isDark, onToggleTheme, showSimulatorLink = false, simu
             {isDark ? <Sun size={16} /> : <Moon size={16} />}
           </button>
         )}
-        <span>v1.0.0</span>
+        <span>v2.0.0</span>
         <span className="font-bold uppercase text-[var(--theme-accent)] tracking-widest animate-pulse">Online</span>
       </div>
     </div>

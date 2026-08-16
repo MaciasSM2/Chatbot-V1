@@ -13,19 +13,19 @@ const fetcher = (url: string) => executeSecureRequest(url);
 
 export default function CrmClientesPage() {
   // 1. Ingestión remota de datos relacionales desde MariaDB usando SWR reactivo
-  const { data, error, mutate, isValidating } = useSWR('/api/crm/clients', fetcher);
+  const { data, error, mutate, isValidating } = useSWR('/admin/crm/clients', fetcher);
   
   // 2. Estados locales encapsulados para el control de filtrado y modales
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedGender, setSelectedGender] = useState<string>('ALL');
   const [isCsvModalOpen, setIsCsvModalOpen] = useState<boolean>(false);
 
-  const clientsList = data?.success ? data.data : [];
+  const clientsList = data?.success && Array.isArray(data.data) ? data.data : [];
 
   // 3. Lógica determinista de filtrado en memoria del cliente
   const filteredClients = clientsList.filter((client: any) => {
-    const matchesSearch = (client.phone_number && client.phone_number.includes(searchTerm)) || 
-                          (client.full_name && client.full_name.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesSearch = (client.phone_number || '').includes(searchTerm) || 
+                          (client.full_name || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesGender = selectedGender === 'ALL' || client.gender === selectedGender;
     return matchesSearch && matchesGender;
   });
@@ -55,14 +55,14 @@ export default function CrmClientesPage() {
             onClick={() => mutate()}
             disabled={isValidating}
             type="button"
-            className="p-3 bg-[#0b0c0d] border border-[var(--border-subtle)] rounded-xl text-text-muted hover:text-text-main transition-colors cursor-pointer"
+            className="p-3 bg-bg-card border border-border-subtle rounded-xl text-text-muted hover:text-text-main transition-colors cursor-pointer"
           >
             <RefreshCw size={14} className={isValidating ? 'animate-spin' : ''} />
           </button>
           <button
             onClick={() => setIsCsvModalOpen(true)}
             type="button"
-            className="bg-[#0b0c0d] border border-[var(--border-subtle)] hover:border-[var(--border-strong)] px-4 py-2.5 rounded-xl font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer text-text-main"
+            className="bg-bg-card border border-border-subtle hover:border-border-strong px-4 py-2.5 rounded-xl font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer text-text-main"
           >
             <UploadCloud size={14} className="text-brand-primary" />
             Carga Masiva (CSV)
@@ -70,7 +70,7 @@ export default function CrmClientesPage() {
           <button
             onClick={handleExportData}
             type="button"
-            className="bg-brand-primary hover:bg-brand-hover text-white px-4 py-2.5 rounded-xl font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-xl shadow-brand-primary/10 cursor-pointer"
+            className="bg-[var(--theme-accent)] hover:brightness-110 text-white px-4 py-2.5 rounded-xl font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-xl shadow-[var(--theme-accent)]/10 cursor-pointer"
           >
             <FileSpreadsheet size={14} />
             Exportar Matriz

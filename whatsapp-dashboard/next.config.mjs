@@ -1,5 +1,6 @@
-/** @type {import('next').NextConfig} */
-const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL?.replace(/\/api$/, '') || 'http://localhost:3000';
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL;
+const cleanedApiUrl = (rawApiUrl && rawApiUrl !== '/api') ? rawApiUrl.replace(/\/api$/, '') : null;
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_SOCKET_URL || cleanedApiUrl || 'http://localhost:3014';
 
 const nextConfig = {
   output: 'standalone',

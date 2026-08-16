@@ -31,7 +31,7 @@ describe("AnalyticsController", () => {
   describe("getDashboardMetrics", () => {
     it("should return volume and funnel metrics successfully", async () => {
       const mockVolume = [{ date: '2026-06-05', userMessages: 10, botMessages: 15 }];
-      const mockFunnel = { CC: 5, NIT: 3, CE: 1, PPX: 0 };
+      const mockFunnel = [{ stepName: 'WELCOME', clientCount: 5 }, { stepName: 'DOCUMENT_PENDING', clientCount: 3 }];
 
       mockStatsService.getDailyMessageVolume.mockResolvedValue(mockVolume);
       mockStatsService.getFsmFunnelStats.mockResolvedValue(mockFunnel);

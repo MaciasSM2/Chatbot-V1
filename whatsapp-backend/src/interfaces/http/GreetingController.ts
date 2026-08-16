@@ -44,9 +44,10 @@ export class GreetingController {
         }
       }
     } catch (error) {
-      logger.error("Error listando templates", { error });
+      logger.error("Error listando templates", { error: error instanceof Error ? error.stack : String(error) });
       res.status(500).send("Error interno");
     }
+
   }
 
   public async createTemplate(req: Request, res: Response): Promise<void> {

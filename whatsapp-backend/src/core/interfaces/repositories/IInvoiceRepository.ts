@@ -17,4 +17,5 @@ export interface IInvoiceRepository {
    * Registra y persiste una liquidación oficial en la base de datos relacional.
    */
   save(invoice: InvoiceEntity): Promise<number>;
+  getAll(): Promise<InvoiceEntity[]>;
 }
