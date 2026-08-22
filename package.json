@@ -10,8 +10,12 @@
   "scripts": {
     "build": "npm run build --workspaces",
     "test": "npm run test --workspace=whatsapp-backend",
+    "lint": "npm run lint --workspace=whatsapp-dashboard",
     "dev:backend": "npm run dev --workspace=whatsapp-backend",
-    "dev:dashboard": "npm run dev --workspace=whatsapp-dashboard"
+    "dev:dashboard": "npm run dev --workspace=whatsapp-dashboard",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
   },
   "engines": {
     "node": ">=20.0.0",
